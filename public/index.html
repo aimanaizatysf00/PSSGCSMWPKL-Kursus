@@ -111,8 +111,7 @@
   </div>
 
   <script>
-    // URL WEB APP APPS SCRIPT KAU DAH SIAP DILETAK KAT SINI!
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4goykKJQG5vAu6GU9QizUkJsr6ndDyifu43eeAzPtIzFZzRsGDdX7A6SzeT7C5zlciw/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpuUNzERAqzgMq3Adwys7Cn7B7N4alA1vZC8nc8bv9iegWJNRM4e3iTSB-tNrBmITosQ/exec"; 
 
     let currentStep = 1;
     let dataMasterPesilat = [];
@@ -155,8 +154,10 @@
     }
 
     async function muatTurunMaster() {
+      document.getElementById('senaraiMaster').innerHTML = `<p class="text-center text-gray-500 py-4">Memuatkan data pesilat...</p>`;
       try {
-        const res = await fetch(APPS_SCRIPT_URL);
+        // 'redirect: follow' dimasukkan untuk benarkan pautan Apps Script
+        const res = await fetch(APPS_SCRIPT_URL, { redirect: "follow" });
         const result = await res.json();
         if (result.success) {
           dataMasterPesilat = result.data;
@@ -165,6 +166,7 @@
           alert('Gagal: ' + result.message);
         }
       } catch(err) {
+        console.error(err);
         alert('Gagal memuatkan data pesilat master daripada Google Sheet.');
       }
     }
@@ -212,10 +214,12 @@
       document.body.style.cursor = 'wait';
 
       try {
+        // Guna text/plain untuk elak CORS pre-flight block
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          redirect: "follow"
         });
 
         const result = await res.json();
@@ -290,8 +294,9 @@
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          redirect: "follow"
         });
 
         const result = await res.json();
