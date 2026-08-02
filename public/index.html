@@ -8,66 +8,85 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
 
-  <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6">
-    <h1 class="text-2xl font-bold text-center text-red-700 mb-6">SISTEM PEMARKAHAN SILAT</h1>
-
-    <!-- LANGKAH 1: MAKLUMAT UJIAN -->
-    <div id="step-1" class="space-y-4">
-      <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
+  <div class="max-w-4xl mx-auto space-y-4">
+    
+    <!-- BANNER SESI AKTIF / HISTORY (TAMPIL BILA ADA DRAF) -->
+    <div id="activeSessionCard" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
-        <label class="block text-sm font-medium">Nama Penguji</label>
-        <input type="text" id="namaPenguji" class="w-full border p-2 rounded mt-1" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
+        <div class="text-xs font-bold text-amber-700 uppercase tracking-wide">📌 Sesi Ujian Sedang Berjalan</div>
+        <div id="sessionSummary" class="text-sm font-semibold text-gray-800 mt-0.5"></div>
       </div>
-      <div>
-        <label class="block text-sm font-medium">Tali Pinggang / Peringkat</label>
-        <select id="taliPinggang" class="w-full border p-2 rounded mt-1" onchange="simpanDrafUjian()">
-          <option value="">Memuatkan senarai tali pinggang...</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Kumpulan / Sesi</label>
-        <input type="text" id="kumpulan" class="w-full border p-2 rounded mt-1" value="Kumpulan 1" oninput="simpanDrafUjian()">
-      </div>
-      <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
-    </div>
-
-    <!-- LANGKAH 2: PILIH PESILAT -->
-    <div id="step-2" class="space-y-4 hidden">
-      <h2 class="text-lg font-bold border-b pb-2">Langkah 2: Pilih Pesilat</h2>
-      <input type="text" id="cariPesilat" oninput="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded">
-      <div id="senaraiMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50"></div>
-      <div class="flex gap-2">
-        <button type="button" onclick="kembaliLangkah(1)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
-        <button type="button" onclick="bukaModal(2)" class="w-1/2 bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
-      </div>
-    </div>
-
-    <!-- LANGKAH 3: BORANG PEMARKAHAN -->
-    <div id="step-3" class="space-y-4 hidden">
-      <h2 class="text-lg font-bold border-b pb-2">Langkah 3: Borang Pemarkahan</h2>
-      <div class="bg-gray-100 p-3 rounded text-sm grid grid-cols-3 gap-2 font-medium">
-        <div>Penguji: <span id="dispPenguji" class="text-red-600"></span></div>
-        <div>Ujian: <span id="dispTaliPinggang" class="text-red-600"></span></div>
-        <div>Kumpulan: <span id="dispKumpulan" class="text-red-600"></span></div>
-      </div>
-
-      <!-- BUTANG TAMBAH PESILAT BAHARU -->
-      <div class="flex justify-end">
-        <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
-          ➕ Tambah Pesilat
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700">
+          ➔ Sambung
+        </button>
+        <button type="button" onclick="padamDrafUjian()" class="bg-gray-200 text-gray-600 px-2 py-1.5 rounded text-xs hover:bg-gray-300" title="Batal Sesi Ini">
+          🗑️
         </button>
       </div>
+    </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse border text-sm text-left">
-          <thead id="headJadual" class="bg-gray-200"></thead>
-          <tbody id="jadualPemarkahan"></tbody>
-        </table>
+    <!-- UTAMA: KAD SISTEM -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h1 class="text-2xl font-bold text-center text-red-700 mb-6">SISTEM PEMARKAHAN SILAT</h1>
+
+      <!-- LANGKAH 1: MAKLUMAT UJIAN -->
+      <div id="step-1" class="space-y-4">
+        <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
+        <div>
+          <label class="block text-sm font-medium">Nama Penguji</label>
+          <input type="text" id="namaPenguji" class="w-full border p-2 rounded mt-1" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Tali Pinggang / Peringkat</label>
+          <select id="taliPinggang" class="w-full border p-2 rounded mt-1" onchange="simpanDrafUjian()">
+            <option value="">Memuatkan senarai tali pinggang...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Kumpulan / Sesi</label>
+          <input type="text" id="kumpulan" class="w-full border p-2 rounded mt-1" value="Kumpulan 1" oninput="simpanDrafUjian()">
+        </div>
+        <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
       </div>
 
-      <div class="flex gap-2">
-        <button type="button" onclick="kembaliLangkah(2)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
-        <button type="button" onclick="bukaModal(3)" class="w-1/2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">💾 Simpan Ke Google Sheet</button>
+      <!-- LANGKAH 2: PILIH PESILAT -->
+      <div id="step-2" class="space-y-4 hidden">
+        <h2 class="text-lg font-bold border-b pb-2">Langkah 2: Pilih Pesilat</h2>
+        <input type="text" id="cariPesilat" oninput="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded">
+        <div id="senaraiMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50"></div>
+        <div class="flex gap-2">
+          <button type="button" onclick="kembaliLangkah(1)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
+          <button type="button" onclick="bukaModal(2)" class="w-1/2 bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
+        </div>
+      </div>
+
+      <!-- LANGKAH 3: BORANG PEMARKAHAN -->
+      <div id="step-3" class="space-y-4 hidden">
+        <h2 class="text-lg font-bold border-b pb-2">Langkah 3: Borang Pemarkahan</h2>
+        <div class="bg-gray-100 p-3 rounded text-sm grid grid-cols-3 gap-2 font-medium">
+          <div>Penguji: <span id="dispPenguji" class="text-red-600"></span></div>
+          <div>Ujian: <span id="dispTaliPinggang" class="text-red-600"></span></div>
+          <div>Kumpulan: <span id="dispKumpulan" class="text-red-600"></span></div>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
+            ➕ Tambah Pesilat
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse border text-sm text-left">
+            <thead id="headJadual" class="bg-gray-200"></thead>
+            <tbody id="jadualPemarkahan"></tbody>
+          </table>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="button" onclick="kembaliLangkah(2)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
+          <button type="button" onclick="bukaModal(3)" class="w-1/2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">💾 Simpan Ke Google Sheet</button>
+        </div>
       </div>
     </div>
   </div>
@@ -80,21 +99,6 @@
       <div class="flex justify-end gap-2">
         <button type="button" onclick="tutupModal()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
         <button type="button" id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">Ya, Teruskan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL SAMBUNG SESI -->
-  <div id="resumeModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full space-y-4 text-center">
-      <div class="text-yellow-500 text-4xl">⚠️</div>
-      <h3 class="text-lg font-bold">Sesi Ujian Ditemui!</h3>
-      <p class="text-gray-600 text-sm">
-        Sistem mengesan anda sedang menjalankan ujian sebelum ini yang belum diselesaikan. Adakah anda mahu menyambung sesi tersebut?
-      </p>
-      <div class="flex justify-center gap-3 pt-2">
-        <button type="button" onclick="padamDrafUjian()" class="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-semibold">Mula Ujian Baharu</button>
-        <button type="button" onclick="pulihkanUjian()" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded text-sm font-semibold">Sambung Sesi</button>
       </div>
     </div>
   </div>
@@ -134,10 +138,8 @@
           isiDropdownTaliPinggang();
           paparSenaraiMaster(dataMasterPesilat);
 
-          const draftExist = localStorage.getItem(DRAFT_KEY);
-          if (draftExist) {
-            document.getElementById('resumeModal').classList.remove('hidden');
-          }
+          // Semak jika ada draf simpanan
+          semakDanPaparBannerSesi();
         } else {
           alert('Gagal muat tetapan: ' + result.message);
         }
@@ -158,6 +160,20 @@
       keys.forEach(k => {
         select.innerHTML += `<option value="${k}">${k}</option>`;
       });
+    }
+
+    function semakDanPaparBannerSesi() {
+      const rawData = localStorage.getItem(DRAFT_KEY);
+      const banner = document.getElementById('activeSessionCard');
+      const summary = document.getElementById('sessionSummary');
+
+      if (rawData) {
+        const draft = JSON.parse(rawData);
+        summary.innerText = `${draft.penguji || 'Penguji'} | ${draft.taliPinggang || '-'} (${draft.kumpulan || '-'}) • ${draft.pesilatPilihan ? draft.pesilatPilihan.length : 0} Pesilat`;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
     }
 
     function simpanDrafUjian() {
@@ -184,10 +200,10 @@
       };
 
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftState));
+      semakDanPaparBannerSesi();
     }
 
     function pulihkanUjian() {
-      document.getElementById('resumeModal').classList.add('hidden');
       const rawData = localStorage.getItem(DRAFT_KEY);
       if (!rawData) return;
 
@@ -224,8 +240,11 @@
     }
 
     function padamDrafUjian() {
-      localStorage.removeItem(DRAFT_KEY);
-      document.getElementById('resumeModal').classList.add('hidden');
+      if (confirm("Pasti mahu memadam draf sesi ini?")) {
+        localStorage.removeItem(DRAFT_KEY);
+        semakDanPaparBannerSesi();
+        tunjukLangkah(1);
+      }
     }
 
     function bukaModal(step) {
@@ -268,7 +287,7 @@
         box.innerHTML = `<p class="text-center text-gray-500 py-4">Tiada data pesilat.</p>`;
         return;
       }
-      box.innerHTML = list.map((p, idx) => {
+      box.innerHTML = list.map((p) => {
         const isChecked = pesilatPilihan.some(item => item.ic === p.ic) ? 'checked' : '';
         return `
           <label class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100 cursor-pointer">
@@ -510,7 +529,6 @@
 
         if (result.success) {
           alert('✅ ' + result.message);
-          // Kekalkan paparan Langkah 3 dan simpan keadaan terkini
           simpanDrafUjian(); 
         } else {
           alert('❌ Gagal: ' + result.message);
