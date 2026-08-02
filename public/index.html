@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Ujian Kenaikan Tali Pinggang</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-md p-6">
+    <h1 class="text-2xl font-bold text-center text-red-700 mb-6">Sistem Pemarkahan Ujian Kenaikan Tali Pinggang</h1>
+
+    <!-- LANGKAH 1: MAKLUMAT PENGUJI -->
+    <div id="step-1" class="block">
+      <h2 class="text-xl font-semibold mb-4 border-b pb-2">Langkah 1: Maklumat Ujian</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block font-medium mb-1">Nama Penuh Penguji:</label>
+          <input type="text" id="namaPenguji" class="w-full border p-2 rounded focus:ring-2 focus:ring-red-500" placeholder="Contoh: Ustaz / Gurulatih Ahmad">
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Gred Tali Pinggang Ujian:</label>
+          <select id="taliPinggang" class="w-full border p-2 rounded">
+            <option value="Pra Awan Putih">Pra Awan Putih</option>
+            <option value="Awan Putih">Awan Putih</option>
+            <option value="Awan Putih Cula 1">Awan Putih Cula 1</option>
+            <option value="Awan Putih Cula 2">Awan Putih Cula 2</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Kumpulan:</label>
+          <select id="kumpulan" class="w-full border p-2 rounded">
+            <option value="Kumpulan 1">Kumpulan 1</option>
+            <option value="Kumpulan 2">Kumpulan 2</option>
+            <option value="Kumpulan 3">Kumpulan 3</option>
+            <option value="Kumpulan 4">Kumpulan 4</option>
+            <option value="Kumpulan 5">Kumpulan 5</option>
+          </select>
+        </div>
+        <button onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya</button>
+      </div>
+    </div>
+
+    <!-- LANGKAH 2: PILIH PESILAT -->
+    <div id="step-2" class="hidden">
+      <h2 class="text-xl font-semibold mb-4 border-b pb-2">Langkah 2: Pilih Pesilat Under Ujian</h2>
+      <div class="mb-4">
+        <input type="text" id="cariPesilat" onkeyup="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded mb-2">
+        <div id="senaraiMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50">
+          <!-- Data Pesilat Master Dari Google Sheet akan dimuatkan di sini -->
+        </div>
+      </div>
+      <div class="flex justify-between">
+        <button onclick="kembaliLangkah(1)" class="bg-gray-400 text-white px-4 py-2 rounded">Kembali</button>
+        <button onclick="bukaModal(2)" class="bg-red-600 text-white px-6 py-2 rounded font-semibold">Sahkan Pesilat & Cipta Sheet</button>
+      </div>
+    </div>
+
+    <!-- LANGKAH 3: LEMBARAN PEMARKAHAN -->
+    <div id="step-3" class="hidden">
+      <div class="bg-red-50 p-4 rounded border mb-6 text-sm md:text-base">
+        <p><strong>Penguji:</strong> <span id="dispPenguji"></span></p>
+        <p><strong>Tali Pinggang:</strong> <span id="dispTaliPinggang"></span> | <strong>Kumpulan:</strong> <span id="dispKumpulan"></span></p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2 border">Nama Pesilat</th>
+              <th class="p-2 border">Gelanggang</th>
+              <th class="p-2 border text-center">Asas (15)</th>
+              <th class="p-2 border text-center">Elak (15)</th>
+              <th class="p-2 border text-center">Kaki (15)</th>
+              <th class="p-2 border text-center">Harimau (20)</th>
+              <th class="p-2 border text-center">Pukul (20)</th>
+              <th class="p-2 border text-center">Lompat (15)</th>
+              <th class="p-2 border text-center font-bold bg-yellow-100">Jumlah</th>
+            </tr>
+          </thead>
+          <tbody id="jadualPemarkahan">
+            <!-- Borang Pemarkahan Dinamik -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-SCREEN POP-UP MODAL CONFIRMATION -->
+  <div id="confirmModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+      <h3 class="text-lg font-bold mb-2 text-gray-800">Pengesahan Maklumat</h3>
+      <p id="modalMessage" class="text-gray-600 mb-6"></p>
+      <div class="flex justify-end gap-3">
+        <button onclick="tutupModal()" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100">Batal</button>
+        <button id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Ya, Sahkan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    let dataMasterPesilat = [];
+    let pesilatPilihan = [];
+
+    // Fungsi Pengendalian Modal In-screen
+    function bukaModal(step) {
+      const modal = document.getElementById('confirmModal');
+      const msg = document.getElementById('modalMessage');
+      const btn = document.getElementById('modalConfirmBtn');
+
+      if (step === 1) {
+        const penguji = document.getElementById('namaPenguji').value;
+        if (!penguji) return alert('Sila isi nama penguji.');
+        msg.innerText = `Adakah anda pasti untuk teruskan dengan penguji "${penguji}"?`;
+        btn.onclick = () => { tutupModal(); muatTurunMaster(); tunjukLangkah(2); };
+      } else if (step === 2) {
+        if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
+        msg.innerText = `Sahkan pilihan ${pesilatPilihan.length} orang pesilat? Sheet baharu akan dicipta dalam Google Sheet.`;
+        btn.onclick = () => { tutupModal(); hantarKeGoogleSheet(); };
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function tutupModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
+    }
+
+    function tunjukLangkah(step) {
+      document.getElementById(`step-${currentStep}`).classList.add('hidden');
+      document.getElementById(`step-${step}`).classList.remove('hidden');
+      currentStep = step;
+    }
+
+    function kembaliLangkah(step) {
+      tunjukLangkah(step);
+    }
+
+    // Ambil Data Master Pesilat
+    async function muatTurunMaster() {
+      const res = await fetch('/api/pesilat-master');
+      const result = await res.json();
+      if (result.success) {
+        dataMasterPesilat = result.data;
+        paparSenaraiMaster(dataMasterPesilat);
+      }
+    }
+
+    function paparSenaraiMaster(list) {
+      const box = document.getElementById('senaraiMaster');
+      box.innerHTML = list.map((p, idx) => `
+        <label class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100 cursor-pointer">
+          <div>
+            <div class="font-semibold">${p.nama}</div>
+            <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
+          </div>
+          <input type="checkbox" onchange="togglePesilat(${idx}, this.checked)" class="w-5 h-5 accent-red-600">
+        </label>
+      `).join('');
+    }
+
+    function togglePesilat(idx, checked) {
+      const item = dataMasterPesilat[idx];
+      if (checked) {
+        pesilatPilihan.push(item);
+      } else {
+        pesilatPilihan = pesilatPilihan.filter(p => p.ic !== item.ic);
+      }
+    }
+
+    // Hantar & Cipta Sheet Baharu
+    async function hantarKeGoogleSheet() {
+      const payload = {
+        penguji: document.getElementById('namaPenguji').value,
+        taliPinggang: document.getElementById('taliPinggang').value,
+        kumpulan: document.getElementById('kumpulan').value,
+        pesilatPilihan: pesilatPilihan
+      };
+
+      const res = await fetch('/api/cipta-sesi-ujian', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        binaJadualPemarkahan(payload);
+        tunjukLangkah(3);
+      } else {
+        alert('Gagal mencipta sheet: ' + result.message);
+      }
+    }
+
+    function binaJadualPemarkahan(data) {
+      document.getElementById('dispPenguji').innerText = data.penguji;
+      document.getElementById('dispTaliPinggang').innerText = data.taliPinggang;
+      document.getElementById('dispKumpulan').innerText = data.kumpulan;
+
+      const tbody = document.getElementById('jadualPemarkahan');
+      tbody.innerHTML = data.pesilatPilihan.map((p, i) => `
+        <tr class="border-b">
+          <td class="p-2 border font-medium">${p.nama}</td>
+          <td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>
+          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m1_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m2_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m3_${i}"></td>
+          <td class="p-1 border"><input type="number" max="20" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m4_${i}"></td>
+          <td class="p-1 border"><input type="number" max="20" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m5_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m6_${i}"></td>
+          <td class="p-1 border text-center font-bold bg-yellow-50" id="total_${i}">0</td>
+        </tr>
+      `).join('');
+    }
+
+    function kiraTotal(idx) {
+      let sum = 0;
+      for (let j = 1; j <= 6; j++) {
+        sum += Number(document.getElementById(`m${j}_${idx}`).value || 0);
+      }
+      document.getElementById(`total_${idx}`).innerText = sum;
+    }
+  </script>
+</body>
+</html>
