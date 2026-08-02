@@ -10,17 +10,17 @@
 
   <div class="max-w-4xl mx-auto space-y-4">
     
-    <!-- BANNER SESI AKTIF / HISTORY (TAMPIL HANYA BILA DI MENU/STEP 1) -->
+    <!-- BANNER SESI AKTIF -->
     <div id="activeSessionCard" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
         <div class="text-xs font-bold text-amber-700 uppercase tracking-wide">📌 Sesi Ujian Sedang Berjalan</div>
         <div id="sessionSummary" class="text-sm font-semibold text-gray-800 mt-0.5"></div>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700 flex items-center gap-1">
+        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700">
           ➔ Sambung Ujian
         </button>
-        <button type="button" onclick="padamDrafUjian()" class="bg-gray-200 text-gray-600 px-2 py-1.5 rounded text-xs hover:bg-gray-300" title="Batal Sesi Ini">
+        <button type="button" onclick="padamDrafUjian()" class="bg-gray-200 text-gray-600 px-2 py-1.5 rounded text-xs hover:bg-gray-300">
           🗑️
         </button>
       </div>
@@ -30,7 +30,7 @@
     <div class="bg-white rounded-xl shadow-md p-6">
       <h1 class="text-2xl font-bold text-center text-red-700 mb-6">SISTEM PEMARKAHAN SILAT</h1>
 
-      <!-- LANGKAH 1: MAKLUMAT UJIAN -->
+      <!-- LANGKAH 1 -->
       <div id="step-1" class="space-y-4">
         <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
         <div>
@@ -50,7 +50,7 @@
         <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
       </div>
 
-      <!-- LANGKAH 2: PILIH PESILAT -->
+      <!-- LANGKAH 2 -->
       <div id="step-2" class="space-y-4 hidden">
         <h2 class="text-lg font-bold border-b pb-2">Langkah 2: Pilih Pesilat</h2>
         <input type="text" id="cariPesilat" oninput="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded">
@@ -61,7 +61,7 @@
         </div>
       </div>
 
-      <!-- LANGKAH 3: BORANG PEMARKAHAN -->
+      <!-- LANGKAH 3 -->
       <div id="step-3" class="space-y-4 hidden">
         <h2 class="text-lg font-bold border-b pb-2">Langkah 3: Borang Pemarkahan</h2>
         <div class="bg-gray-100 p-3 rounded text-sm grid grid-cols-3 gap-2 font-medium">
@@ -91,7 +91,19 @@
     </div>
   </div>
 
-  <!-- MODAL PENGESAHAN MAKLUMAT -->
+  <!-- POP-UP NOTIFIKASI / PENGUMUMAN URUS SETIA -->
+  <div id="notifModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4 z-50 animate-bounce-short">
+    <div class="bg-white rounded-xl p-6 max-w-sm w-full space-y-4 text-center border-4 border-amber-500 shadow-2xl">
+      <div class="text-4xl">📢</div>
+      <h3 class="text-lg font-bold text-gray-800">PENGUMUMAN URUS SETIA</h3>
+      <div id="notifMesej" class="bg-amber-50 p-3 rounded-lg text-sm font-semibold text-amber-900 border border-amber-200"></div>
+      <button type="button" onclick="tutupNotif()" class="w-full py-2 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700 shadow">
+        Faham & Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL PENGESAHAN -->
   <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-40">
     <div class="bg-white rounded-lg p-6 max-w-sm w-full space-y-4 text-center">
       <h3 class="text-lg font-bold">Pengesahan</h3>
@@ -103,8 +115,8 @@
     </div>
   </div>
 
-  <!-- MODAL TAMBAH PESILAT (ON-THE-FLY) -->
-  <div id="tambahPesilatModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+  <!-- MODAL TAMBAH PESILAT -->
+  <div id="tambahPesilatModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-40">
     <div class="bg-white rounded-lg p-6 max-w-md w-full space-y-4">
       <h3 class="text-lg font-bold border-b pb-2">Tambah Pesilat Ke Ujian Ini</h3>
       <input type="text" id="cariTambahPesilat" oninput="tapisPesilatTambah()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded text-sm">
@@ -125,6 +137,7 @@
     let currentSheetTitle = "";
     let activeKriteria = [];
     let activeMarkahMaks = [];
+    let lastNotifId = localStorage.getItem("LAST_NOTIF_ID") || "";
 
     const DRAFT_KEY = "SILAT_EXAM_DRAFT_V1";
 
@@ -137,9 +150,11 @@
           tetapanTaliPinggang = result.tetapan;
           isiDropdownTaliPinggang();
           paparSenaraiMaster(dataMasterPesilat);
-
-          // Semak jika ada draf simpanan semasa berada di Langkah 1 (Menu)
           semakDanPaparBannerSesi();
+
+          // Mulakan semakan pengumuman setiap 8 saat
+          semakPengumuman();
+          setInterval(semakPengumuman, 8000);
         } else {
           alert('Gagal muat tetapan: ' + result.message);
         }
@@ -149,6 +164,26 @@
       }
     };
 
+    async function semakPengumuman() {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
+        const result = await res.json();
+        if (result.success && result.notif) {
+          // Hanya paparkan jika ada notifikasi baharu (ID berbeza)
+          if (result.notif.id !== lastNotifId) {
+            document.getElementById('notifMesej').innerText = result.notif.mesej;
+            document.getElementById('notifModal').classList.remove('hidden');
+            lastNotifId = result.notif.id;
+          }
+        }
+      } catch(e) { console.log('Gagal semak notif', e); }
+    }
+
+    function tutupNotif() {
+      localStorage.setItem("LAST_NOTIF_ID", lastNotifId);
+      document.getElementById('notifModal').classList.add('hidden');
+    }
+
     function isiDropdownTaliPinggang() {
       const select = document.getElementById('taliPinggang');
       select.innerHTML = "";
@@ -157,9 +192,7 @@
         select.innerHTML = `<option value="">Tiada tetapan dijumpai</option>`;
         return;
       }
-      keys.forEach(k => {
-        select.innerHTML += `<option value="${k}">${k}</option>`;
-      });
+      keys.forEach(k => { select.innerHTML += `<option value="${k}">${k}</option>`; });
     }
 
     function semakDanPaparBannerSesi() {
@@ -167,7 +200,6 @@
       const banner = document.getElementById('activeSessionCard');
       const summary = document.getElementById('sessionSummary');
 
-      // Banner hanya dipaparkan jika wujud draf DAN pengguna berada di Langkah 1 (Menu)
       if (rawData && currentStep === 1) {
         const draft = JSON.parse(rawData);
         summary.innerText = `${draft.penguji || 'Penguji'} | ${draft.taliPinggang || '-'} (${draft.kumpulan || '-'}) • ${draft.pesilatPilihan ? draft.pesilatPilihan.length : 0} Pesilat`;
