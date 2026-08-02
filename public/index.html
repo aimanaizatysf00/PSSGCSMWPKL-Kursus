@@ -46,9 +46,9 @@
     <div id="step-2" class="hidden">
       <h2 class="text-xl font-semibold mb-4 border-b pb-2">Langkah 2: Pilih Pesilat Under Ujian</h2>
       <div class="mb-4">
-        <input type="text" id="cariPesilat" onkeyup="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded mb-2">
+        <input type="text" id="cariPesilat" onkeyup="tapisPesilat()" placeholder="Cari nama pesilat..." class="w-full border p-2 rounded mb-2">
         <div id="senaraiMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50">
-          <!-- Data Pesilat Master Dari Google Sheet akan dimuatkan di sini -->
+          <p class="text-center text-gray-500 py-4">Memuatkan data pesilat...</p>
         </div>
       </div>
       <div class="flex justify-between">
@@ -88,7 +88,7 @@
   </div>
 
   <!-- IN-SCREEN POP-UP MODAL CONFIRMATION -->
-  <div id="confirmModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4">
+  <div id="confirmModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
       <h3 class="text-lg font-bold mb-2 text-gray-800">Pengesahan Maklumat</h3>
       <p id="modalMessage" class="text-gray-600 mb-6"></p>
@@ -100,11 +100,13 @@
   </div>
 
   <script>
+    // TAMPAL URL WEB APP APPS SCRIPT KORANG DI SINI!
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRb2FELMCtW3ep8WrmkYIB8BrG63gb6C8cBmwcjCheV1FhJbgItWNuSjzT07GLSQvroQ/exec"; 
+
     let currentStep = 1;
     let dataMasterPesilat = [];
     let pesilatPilihan = [];
 
-    // Fungsi Pengendalian Modal In-screen
     function bukaModal(step) {
       const modal = document.getElementById('confirmModal');
       const msg = document.getElementById('modalMessage');
@@ -113,7 +115,7 @@
       if (step === 1) {
         const penguji = document.getElementById('namaPenguji').value;
         if (!penguji) return alert('Sila isi nama penguji.');
-        msg.innerText = `Adakah anda pasti untuk teruskan dengan penguji "${penguji}"?`;
+        msg.innerText = `Adakah anda pasti untuk teruskan sebagai Penguji: "${penguji}"?`;
         btn.onclick = () => { tutupModal(); muatTurunMaster(); tunjukLangkah(2); };
       } else if (step === 2) {
         if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
@@ -137,18 +139,26 @@
       tunjukLangkah(step);
     }
 
-    // Ambil Data Master Pesilat
+    // Ambil Data Master dari Apps Script
     async function muatTurunMaster() {
-      const res = await fetch('/api/pesilat-master');
-      const result = await res.json();
-      if (result.success) {
-        dataMasterPesilat = result.data;
-        paparSenaraiMaster(dataMasterPesilat);
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        const result = await res.json();
+        if (result.success) {
+          dataMasterPesilat = result.data;
+          paparSenaraiMaster(dataMasterPesilat);
+        }
+      } catch(err) {
+        alert('Gagal memuatkan data pesilat master.');
       }
     }
 
     function paparSenaraiMaster(list) {
       const box = document.getElementById('senaraiMaster');
+      if(list.length === 0) {
+        box.innerHTML = `<p class="text-center text-gray-500 py-4">Tiada data pesilat dijumpai.</p>`;
+        return;
+      }
       box.innerHTML = list.map((p, idx) => `
         <label class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100 cursor-pointer">
           <div>
@@ -160,6 +170,12 @@
       `).join('');
     }
 
+    function tapisPesilat() {
+      const kw = document.getElementById('cariPesilat').value.toLowerCase();
+      const filtered = dataMasterPesilat.filter(p => p.nama.toLowerCase().includes(kw) || p.ic.includes(kw));
+      paparSenaraiMaster(filtered);
+    }
+
     function togglePesilat(idx, checked) {
       const item = dataMasterPesilat[idx];
       if (checked) {
@@ -169,7 +185,7 @@
       }
     }
 
-    // Hantar & Cipta Sheet Baharu
+    // Hantar Data ke Apps Script untuk Buat Sheet Baharu
     async function hantarKeGoogleSheet() {
       const payload = {
         penguji: document.getElementById('namaPenguji').value,
@@ -178,18 +194,28 @@
         pesilatPilihan: pesilatPilihan
       };
 
-      const res = await fetch('/api/cipta-sesi-ujian', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      // Tunjuk status loading
+      document.body.style.cursor = 'wait';
 
-      const result = await res.json();
-      if (result.success) {
-        binaJadualPemarkahan(payload);
-        tunjukLangkah(3);
-      } else {
-        alert('Gagal mencipta sheet: ' + result.message);
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' }, // Apps Script guna text/plain untuk elak masalah pre-flight CORS
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        document.body.style.cursor = 'default';
+
+        if (result.success) {
+          binaJadualPemarkahan(payload);
+          tunjukLangkah(3);
+        } else {
+          alert('Gagal mencipta sheet: ' + result.message);
+        }
+      } catch (err) {
+        document.body.style.cursor = 'default';
+        alert('Ralat semasa menghantar data ke Google Sheet.');
       }
     }
 
