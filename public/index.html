@@ -59,9 +59,14 @@
 
     <!-- LANGKAH 3: LEMBARAN PEMARKAHAN -->
     <div id="step-3" class="hidden">
-      <div class="bg-red-50 p-4 rounded border mb-6 text-sm md:text-base">
-        <p><strong>Penguji:</strong> <span id="dispPenguji"></span></p>
-        <p><strong>Tali Pinggang:</strong> <span id="dispTaliPinggang"></span> | <strong>Kumpulan:</strong> <span id="dispKumpulan"></span></p>
+      <div class="bg-red-50 p-4 rounded border mb-6 text-sm md:text-base flex justify-between items-center">
+        <div>
+          <p><strong>Penguji:</strong> <span id="dispPenguji"></span></p>
+          <p><strong>Tali Pinggang:</strong> <span id="dispTaliPinggang"></span> | <strong>Kumpulan:</strong> <span id="dispKumpulan"></span></p>
+        </div>
+        <button onclick="bukaModal(3)" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold shadow-md flex items-center gap-2">
+          💾 Simpan Markah Ke Sheet
+        </button>
       </div>
 
       <div class="overflow-x-auto">
@@ -83,6 +88,12 @@
             <!-- Borang Pemarkahan Dinamik -->
           </tbody>
         </table>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button onclick="bukaModal(3)" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg">
+          💾 Simpan Markah Akhir
+        </button>
       </div>
     </div>
   </div>
@@ -106,6 +117,7 @@
     let currentStep = 1;
     let dataMasterPesilat = [];
     let pesilatPilihan = [];
+    let currentSheetTitle = "";
 
     function bukaModal(step) {
       const modal = document.getElementById('confirmModal');
@@ -121,6 +133,9 @@
         if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
         msg.innerText = `Sahkan pilihan ${pesilatPilihan.length} orang pesilat? Sheet baharu akan dicipta dalam Google Sheet.`;
         btn.onclick = () => { tutupModal(); hantarKeGoogleSheet(); };
+      } else if (step === 3) {
+        msg.innerText = `Hantar dan simpan semua markah terkini ke Google Sheet?`;
+        btn.onclick = () => { tutupModal(); simpanMarkahAkhir(); };
       }
       modal.classList.remove('hidden');
     }
@@ -139,7 +154,6 @@
       tunjukLangkah(step);
     }
 
-    // Ambil Data Master dari Apps Script
     async function muatTurunMaster() {
       try {
         const res = await fetch(APPS_SCRIPT_URL);
@@ -185,7 +199,6 @@
       }
     }
 
-    // Hantar Data ke Apps Script untuk Buat Sheet Baharu
     async function hantarKeGoogleSheet() {
       const payload = {
         penguji: document.getElementById('namaPenguji').value,
@@ -194,13 +207,12 @@
         pesilatPilihan: pesilatPilihan
       };
 
-      // Tunjuk status loading
       document.body.style.cursor = 'wait';
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' }, // Apps Script guna text/plain untuk elak masalah pre-flight CORS
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload)
         });
 
@@ -208,6 +220,7 @@
         document.body.style.cursor = 'default';
 
         if (result.success) {
+          currentSheetTitle = result.sheetTitle;
           binaJadualPemarkahan(payload);
           tunjukLangkah(3);
         } else {
@@ -229,12 +242,12 @@
         <tr class="border-b">
           <td class="p-2 border font-medium">${p.nama}</td>
           <td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>
-          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m1_${i}"></td>
-          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m2_${i}"></td>
-          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m3_${i}"></td>
-          <td class="p-1 border"><input type="number" max="20" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m4_${i}"></td>
-          <td class="p-1 border"><input type="number" max="20" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m5_${i}"></td>
-          <td class="p-1 border"><input type="number" max="15" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m6_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m1_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m2_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m3_${i}"></td>
+          <td class="p-1 border"><input type="number" max="20" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m4_${i}"></td>
+          <td class="p-1 border"><input type="number" max="20" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m5_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m6_${i}"></td>
           <td class="p-1 border text-center font-bold bg-yellow-50" id="total_${i}">0</td>
         </tr>
       `).join('');
@@ -246,6 +259,52 @@
         sum += Number(document.getElementById(`m${j}_${idx}`).value || 0);
       }
       document.getElementById(`total_${idx}`).innerText = sum;
+    }
+
+    // Fungsi Khas: Kumpul semua markah dalam table & hantar ke Apps Script
+    async function simpanMarkahAkhir() {
+      let dataMarkah = pesilatPilihan.map((p, i) => {
+        return {
+          nama: p.nama,
+          ic: p.ic,
+          gelanggang: p.gelanggang,
+          m1: Number(document.getElementById(`m1_${i}`).value || 0),
+          m2: Number(document.getElementById(`m2_${i}`).value || 0),
+          m3: Number(document.getElementById(`m3_${i}`).value || 0),
+          m4: Number(document.getElementById(`m4_${i}`).value || 0),
+          m5: Number(document.getElementById(`m5_${i}`).value || 0),
+          m6: Number(document.getElementById(`m6_${i}`).value || 0),
+          jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
+        };
+      });
+
+      const payload = {
+        action: 'simpanMarkah',
+        sheetTitle: currentSheetTitle,
+        dataMarkah: dataMarkah
+      };
+
+      document.body.style.cursor = 'wait';
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        document.body.style.cursor = 'default';
+
+        if (result.success) {
+          alert('✅ ' + result.message);
+        } else {
+          alert('❌ Gagal menyimpan markah: ' + result.message);
+        }
+      } catch (err) {
+        document.body.style.cursor = 'default';
+        alert('Ralat rangkaian semasa menyimpan markah.');
+      }
     }
   </script>
 </body>
