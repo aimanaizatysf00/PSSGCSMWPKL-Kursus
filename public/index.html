@@ -65,14 +65,29 @@
     </div>
   </div>
 
-  <!-- MODAL PENGESAHAN -->
-  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+  <!-- MODAL PENGESAHAN MAKLUMAT -->
+  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-40">
     <div class="bg-white rounded-lg p-6 max-w-sm w-full space-y-4 text-center">
       <h3 class="text-lg font-bold">Pengesahan</h3>
       <p id="modalMessage" class="text-gray-600 text-sm"></p>
       <div class="flex justify-end gap-2">
         <button onclick="tutupModal()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
         <button id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">Ya, Teruskan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SAMBUNG SESI (BILA REFRESH) -->
+  <div id="resumeModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full space-y-4 text-center">
+      <div class="text-yellow-500 text-4xl">⚠️</div>
+      <h3 class="text-lg font-bold">Sesi Ujian Ditemui!</h3>
+      <p class="text-gray-600 text-sm">
+        Sistem mengesan anda sedang menjalankan ujian sebelum ini yang belum diselesaikan. Adakah anda mahu menyambung sesi tersebut?
+      </p>
+      <div class="flex justify-center gap-3 pt-2">
+        <button onclick="padamDrafUjian()" class="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-semibold">Mula Ujian Baharu</button>
+        <button onclick="pulihkanUjian()" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded text-sm font-semibold">Sambung Sesi</button>
       </div>
     </div>
   </div>
@@ -88,7 +103,9 @@
     let activeKriteria = [];
     let activeMarkahMaks = [];
 
-    // Muat data automatik semasa laman web dibuka
+    // KEY UNTUK LOCALSTORAGE
+    const DRAFT_KEY = "SILAT_EXAM_DRAFT_V1";
+
     window.onload = async function() {
       try {
         const res = await fetch(APPS_SCRIPT_URL, { redirect: "follow" });
@@ -98,6 +115,12 @@
           tetapanTaliPinggang = result.tetapan;
           isiDropdownTaliPinggang();
           paparSenaraiMaster(dataMasterPesilat);
+
+          // Semak jika ada simpanan draf ujian
+          const draftExist = localStorage.getItem(DRAFT_KEY);
+          if (draftExist) {
+            document.getElementById('resumeModal').classList.remove('hidden');
+          }
         } else {
           alert('Gagal muat tetapan: ' + result.message);
         }
@@ -118,6 +141,94 @@
       keys.forEach(k => {
         select.innerHTML += `<option value="${k}">${k}</option>`;
       });
+    }
+
+    // FUNGSI UNTUK SIMPAN DRAF SECARA AUTOMATIK
+    function simpanDrafUjian() {
+      // Ambil markah semasa jika di Langkah 3
+      let markahDraft = [];
+      if (currentStep === 3) {
+        markahDraft = pesilatPilihan.map((p, i) => {
+          return activeKriteria.map((_, j) => {
+            const el = document.getElementById(`m_${i}_${j}`);
+            return el ? Number(el.value || 0) : 0;
+          });
+        });
+      }
+
+      const draftState = {
+        currentStep: currentStep,
+        penguji: document.getElementById('namaPenguji').value,
+        taliPinggang: document.getElementById('taliPinggang').value,
+        kumpulan: document.getElementById('kumpulan').value,
+        pesilatPilihan: pesilatPilihan,
+        currentSheetTitle: currentSheetTitle,
+        activeKriteria: activeKriteria,
+        activeMarkahMaks: activeMarkahMaks,
+        markahDraft: markahDraft
+      };
+
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftState));
+    }
+
+    // PULIHKAN DATA BILA TEKAN "SAMBUNG SESI"
+    function pulihkanUjian() {
+      document.getElementById('resumeModal').classList.add('hidden');
+      const rawData = localStorage.getItem(DRAFT_KEY);
+      if (!rawData) return;
+
+      const draft = JSON.parse(rawData);
+
+      // Isi input asal
+      document.getElementById('namaPenguji').value = draft.penguji || '';
+      document.getElementById('taliPinggang').value = draft.taliPinggang || '';
+      document.getElementById('kumpulan').value = draft.kumpulan || '';
+      
+      pesilatPilihan = draft.pesilatPilihan || [];
+      currentSheetTitle = draft.currentSheetTitle || '';
+      activeKriteria = draft.activeKriteria || [];
+      activeMarkahMaks = draft.activeMarkahMaks || [];
+
+      // Tandakan checkbox pesilat pilihan di Langkah 2
+      paparSenaraiMaster(dataMasterPesilat);
+      pesilatPilihan.forEach(selected => {
+        const idx = dataMasterPesilat.findIndex(m => m.ic === selected.ic);
+        if (idx !== -1) {
+          const checkboxes = document.querySelectorAll('#senaraiMaster input[type="checkbox"]');
+          if (checkboxes[idx]) checkboxes[idx].checked = true;
+        }
+      });
+
+      // Jika sebelum refresh berada di Langkah 3
+      if (draft.currentStep === 3 && activeKriteria.length > 0) {
+        const totalMaks = activeMarkahMaks.reduce((a, b) => a + b, 0);
+        binaJadualPemarkahan({
+          penguji: draft.penguji,
+          taliPinggang: draft.taliPinggang,
+          kumpulan: draft.kumpulan,
+          pesilatPilihan: pesilatPilihan,
+          totalMaks: totalMaks
+        });
+
+        // Isikan semula markah yang ditip sebelum ini
+        if (draft.markahDraft && draft.markahDraft.length > 0) {
+          draft.markahDraft.forEach((mArr, i) => {
+            mArr.forEach((val, j) => {
+              const el = document.getElementById(`m_${i}_${j}`);
+              if (el) el.value = val;
+            });
+            kiraTotal(i);
+          });
+        }
+      }
+
+      tunjukLangkah(draft.currentStep || 1);
+    }
+
+    // PADAM DRAF BILA MULA BARU ATAU SELESAI SIMPAN
+    function padamDrafUjian() {
+      localStorage.removeItem(DRAFT_KEY);
+      document.getElementById('resumeModal').classList.add('hidden');
     }
 
     function bukaModal(step) {
@@ -144,11 +255,14 @@
     }
 
     function tutupModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+
     function tunjukLangkah(step) {
       document.getElementById(`step-${currentStep}`).classList.add('hidden');
       document.getElementById(`step-${step}`).classList.remove('hidden');
       currentStep = step;
+      simpanDrafUjian(); // Simpan langkah terkini ke localstorage
     }
+
     function kembaliLangkah(step) { tunjukLangkah(step); }
 
     function paparSenaraiMaster(list) {
@@ -178,6 +292,7 @@
       const item = dataMasterPesilat[idx];
       if (checked) pesilatPilihan.push(item);
       else pesilatPilihan = pesilatPilihan.filter(p => p.ic !== item.ic);
+      simpanDrafUjian();
     }
 
     async function hantarKeGoogleSheet() {
@@ -229,7 +344,6 @@
       document.getElementById('dispTaliPinggang').innerText = data.taliPinggang;
       document.getElementById('dispKumpulan').innerText = data.kumpulan;
 
-      // Bina Header Jadual
       let headHtml = `<tr><th class="p-2 border">Nama</th><th class="p-2 border">Gelanggang</th>`;
       activeKriteria.forEach((k, idx) => {
         headHtml += `<th class="p-2 border text-center">${k}<br><span class="text-xs font-normal text-gray-600">(${activeMarkahMaks[idx]})</span></th>`;
@@ -237,7 +351,6 @@
       headHtml += `<th class="p-2 border text-center">Jumlah<br><span class="text-xs font-normal text-gray-600">(${data.totalMaks})</span></th></tr>`;
       document.getElementById('headJadual').innerHTML = headHtml;
 
-      // Bina Baris Pesilat
       const tbody = document.getElementById('jadualPemarkahan');
       tbody.innerHTML = data.pesilatPilihan.map((p, i) => {
         let rowHtml = `<tr class="border-b"><td class="p-2 border font-medium">${p.nama}</td><td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>`;
@@ -257,6 +370,9 @@
         sum += Number(document.getElementById(`m_${idxPesilat}_${j}`).value || 0);
       });
       document.getElementById(`total_${idxPesilat}`).innerText = sum;
+      
+      // Auto-save markah semasa sedang ditaip
+      simpanDrafUjian();
     }
 
     async function simpanMarkahAkhir() {
@@ -290,8 +406,13 @@
         const result = await res.json();
         document.body.style.cursor = 'default';
 
-        if (result.success) alert('✅ ' + result.message);
-        else alert('❌ Gagal: ' + result.message);
+        if (result.success) {
+          alert('✅ ' + result.message);
+          padamDrafUjian(); // Padam simpanan tempatan selepas berjaya simpan ke Google Sheet
+          window.location.reload(); // Reload ke skrin asal
+        } else {
+          alert('❌ Gagal: ' + result.message);
+        }
       } catch (err) {
         document.body.style.cursor = 'default';
         alert('Ralat rangkaian.');
