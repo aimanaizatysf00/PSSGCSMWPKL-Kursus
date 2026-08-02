@@ -480,48 +480,47 @@
     }
 
     async function simpanMarkahAkhir() {
-      let dataMarkah = pesilatPilihan.map((p, i) => {
-        let mArray = activeKriteria.map((_, j) => Number(document.getElementById(`m_${i}_${j}`).value || 0));
-        return {
-          nama: p.nama,
-          ic: p.ic,
-          gelanggang: p.gelanggang,
-          markahArray: mArray,
-          jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
-        };
-      });
+  let dataMarkah = pesilatPilihan.map((p, i) => {
+    let mArray = activeKriteria.map((_, j) => Number(document.getElementById(`m_${i}_${j}`).value || 0));
+    return {
+      nama: p.nama,
+      ic: p.ic,
+      gelanggang: p.gelanggang,
+      markahArray: mArray,
+      jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
+    };
+  });
 
-      const payload = {
-        action: 'simpanMarkah',
-        sheetTitle: currentSheetTitle,
-        dataMarkah: dataMarkah
-      };
+  const payload = {
+    action: 'simpanMarkah',
+    sheetTitle: currentSheetTitle,
+    dataMarkah: dataMarkah
+  };
 
-      document.body.style.cursor = 'wait';
+  document.body.style.cursor = 'wait';
 
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload),
-          redirect: "follow"
-        });
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      redirect: "follow"
+    });
 
-        const result = await res.json();
-        document.body.style.cursor = 'default';
+    const result = await res.json();
+    document.body.style.cursor = 'default';
 
-        if (result.success) {
-          alert('✅ ' + result.message);
-          padamDrafUjian();
-          window.location.reload();
-        } else {
-          alert('❌ Gagal: ' + result.message);
-        }
-      } catch (err) {
-        document.body.style.cursor = 'default';
-        alert('Ralat rangkaian.');
-      }
+    if (result.success) {
+      alert('✅ ' + result.message);
+      padamDrafUjian(); // Padam draf telefon sahaja, tapi skrin kekal di Langkah 3
+    } else {
+      alert('❌ Gagal: ' + result.message);
     }
+  } catch (err) {
+    document.body.style.cursor = 'default';
+    alert('Ralat rangkaian.');
+  }
+}
   </script>
 </body>
 </html>
