@@ -111,201 +111,202 @@
   </div>
 
   <script>
-  // Menggunakan relative path sebab frontend & backend berada di server Render yang sama
-  const API_BASE = ""; 
+    // URL WEB APP APPS SCRIPT KAU DAH SIAP DILETAK KAT SINI!
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4goykKJQG5vAu6GU9QizUkJsr6ndDyifu43eeAzPtIzFZzRsGDdX7A6SzeT7C5zlciw/exec"; 
 
-  let currentStep = 1;
-  let dataMasterPesilat = [];
-  let pesilatPilihan = [];
-  let currentSheetTitle = "";
+    let currentStep = 1;
+    let dataMasterPesilat = [];
+    let pesilatPilihan = [];
+    let currentSheetTitle = "";
 
-  function bukaModal(step) {
-    const modal = document.getElementById('confirmModal');
-    const msg = document.getElementById('modalMessage');
-    const btn = document.getElementById('modalConfirmBtn');
+    function bukaModal(step) {
+      const modal = document.getElementById('confirmModal');
+      const msg = document.getElementById('modalMessage');
+      const btn = document.getElementById('modalConfirmBtn');
 
-    if (step === 1) {
-      const penguji = document.getElementById('namaPenguji').value;
-      if (!penguji) return alert('Sila isi nama penguji.');
-      msg.innerText = `Adakah anda pasti untuk teruskan sebagai Penguji: "${penguji}"?`;
-      btn.onclick = () => { tutupModal(); muatTurunMaster(); tunjukLangkah(2); };
-    } else if (step === 2) {
-      if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
-      msg.innerText = `Sahkan pilihan ${pesilatPilihan.length} orang pesilat? Sheet baharu akan dicipta dalam Google Sheet.`;
-      btn.onclick = () => { tutupModal(); hantarKeGoogleSheet(); };
-    } else if (step === 3) {
-      msg.innerText = `Hantar dan simpan semua markah terkini ke Google Sheet?`;
-      btn.onclick = () => { tutupModal(); simpanMarkahAkhir(); };
-    }
-    modal.classList.remove('hidden');
-  }
-
-  function tutupModal() {
-    document.getElementById('confirmModal').classList.add('hidden');
-  }
-
-  function tunjukLangkah(step) {
-    document.getElementById(`step-${currentStep}`).classList.add('hidden');
-    document.getElementById(`step-${step}`).classList.remove('hidden');
-    currentStep = step;
-  }
-
-  function kembaliLangkah(step) {
-    tunjukLangkah(step);
-  }
-
-  async function muatTurunMaster() {
-    try {
-      const res = await fetch('/api/pesilat-master');
-      const result = await res.json();
-      if (result.success) {
-        dataMasterPesilat = result.data;
-        paparSenaraiMaster(dataMasterPesilat);
-      } else {
-        alert('Gagal: ' + result.message);
+      if (step === 1) {
+        const penguji = document.getElementById('namaPenguji').value;
+        if (!penguji) return alert('Sila isi nama penguji.');
+        msg.innerText = `Adakah anda pasti untuk teruskan sebagai Penguji: "${penguji}"?`;
+        btn.onclick = () => { tutupModal(); muatTurunMaster(); tunjukLangkah(2); };
+      } else if (step === 2) {
+        if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
+        msg.innerText = `Sahkan pilihan ${pesilatPilihan.length} orang pesilat? Sheet baharu akan dicipta dalam Google Sheet.`;
+        btn.onclick = () => { tutupModal(); hantarKeGoogleSheet(); };
+      } else if (step === 3) {
+        msg.innerText = `Hantar dan simpan semua markah terkini ke Google Sheet?`;
+        btn.onclick = () => { tutupModal(); simpanMarkahAkhir(); };
       }
-    } catch(err) {
-      alert('Gagal memuatkan data pesilat master daripada server.');
+      modal.classList.remove('hidden');
     }
-  }
 
-  function paparSenaraiMaster(list) {
-    const box = document.getElementById('senaraiMaster');
-    if(list.length === 0) {
-      box.innerHTML = `<p class="text-center text-gray-500 py-4">Tiada data pesilat dijumpai.</p>`;
-      return;
+    function tutupModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
     }
-    box.innerHTML = list.map((p, idx) => `
-      <label class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100 cursor-pointer">
-        <div>
-          <div class="font-semibold">${p.nama}</div>
-          <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
-        </div>
-        <input type="checkbox" onchange="togglePesilat(${idx}, this.checked)" class="w-5 h-5 accent-red-600">
-      </label>
-    `).join('');
-  }
 
-  function tapisPesilat() {
-    const kw = document.getElementById('cariPesilat').value.toLowerCase();
-    const filtered = dataMasterPesilat.filter(p => p.nama.toLowerCase().includes(kw) || p.ic.includes(kw));
-    paparSenaraiMaster(filtered);
-  }
-
-  function togglePesilat(idx, checked) {
-    const item = dataMasterPesilat[idx];
-    if (checked) {
-      pesilatPilihan.push(item);
-    } else {
-      pesilatPilihan = pesilatPilihan.filter(p => p.ic !== item.ic);
+    function tunjukLangkah(step) {
+      document.getElementById(`step-${currentStep}`).classList.add('hidden');
+      document.getElementById(`step-${step}`).classList.remove('hidden');
+      currentStep = step;
     }
-  }
 
-  async function hantarKeGoogleSheet() {
-    const payload = {
-      penguji: document.getElementById('namaPenguji').value,
-      taliPinggang: document.getElementById('taliPinggang').value,
-      kumpulan: document.getElementById('kumpulan').value,
-      pesilatPilihan: pesilatPilihan
-    };
+    function kembaliLangkah(step) {
+      tunjukLangkah(step);
+    }
 
-    document.body.style.cursor = 'wait';
-
-    try {
-      const res = await fetch('/api/cipta-sesi-ujian', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-      document.body.style.cursor = 'default';
-
-      if (result.success) {
-        currentSheetTitle = result.sheetTitle;
-        binaJadualPemarkahan(payload);
-        tunjukLangkah(3);
-      } else {
-        alert('Gagal mencipta sheet: ' + result.message);
+    async function muatTurunMaster() {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        const result = await res.json();
+        if (result.success) {
+          dataMasterPesilat = result.data;
+          paparSenaraiMaster(dataMasterPesilat);
+        } else {
+          alert('Gagal: ' + result.message);
+        }
+      } catch(err) {
+        alert('Gagal memuatkan data pesilat master daripada Google Sheet.');
       }
-    } catch (err) {
-      document.body.style.cursor = 'default';
-      alert('Ralat semasa menghantar data ke server.');
     }
-  }
 
-  function binaJadualPemarkahan(data) {
-    document.getElementById('dispPenguji').innerText = data.penguji;
-    document.getElementById('dispTaliPinggang').innerText = data.taliPinggang;
-    document.getElementById('dispKumpulan').innerText = data.kumpulan;
-
-    const tbody = document.getElementById('jadualPemarkahan');
-    tbody.innerHTML = data.pesilatPilihan.map((p, i) => `
-      <tr class="border-b">
-        <td class="p-2 border font-medium">${p.nama}</td>
-        <td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>
-        <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m1_${i}"></td>
-        <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m2_${i}"></td>
-        <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m3_${i}"></td>
-        <td class="p-1 border"><input type="number" max="20" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m4_${i}"></td>
-        <td class="p-1 border"><input type="number" max="20" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m5_${i}"></td>
-        <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m6_${i}"></td>
-        <td class="p-1 border text-center font-bold bg-yellow-50" id="total_${i}">0</td>
-      </tr>
-    `).join('');
-  }
-
-  function kiraTotal(idx) {
-    let sum = 0;
-    for (let j = 1; j <= 6; j++) {
-      sum += Number(document.getElementById(`m${j}_${idx}`).value || 0);
+    function paparSenaraiMaster(list) {
+      const box = document.getElementById('senaraiMaster');
+      if(list.length === 0) {
+        box.innerHTML = `<p class="text-center text-gray-500 py-4">Tiada data pesilat dijumpai.</p>`;
+        return;
+      }
+      box.innerHTML = list.map((p, idx) => `
+        <label class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100 cursor-pointer">
+          <div>
+            <div class="font-semibold">${p.nama}</div>
+            <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
+          </div>
+          <input type="checkbox" onchange="togglePesilat(${idx}, this.checked)" class="w-5 h-5 accent-red-600">
+        </label>
+      `).join('');
     }
-    document.getElementById(`total_${idx}`).innerText = sum;
-  }
 
-  async function simpanMarkahAkhir() {
-    let dataMarkah = pesilatPilihan.map((p, i) => {
-      return {
-        nama: p.nama,
-        ic: p.ic,
-        gelanggang: p.gelanggang,
-        m1: Number(document.getElementById(`m1_${i}`).value || 0),
-        m2: Number(document.getElementById(`m2_${i}`).value || 0),
-        m3: Number(document.getElementById(`m3_${i}`).value || 0),
-        m4: Number(document.getElementById(`m4_${i}`).value || 0),
-        m5: Number(document.getElementById(`m5_${i}`).value || 0),
-        m6: Number(document.getElementById(`m6_${i}`).value || 0),
-        jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
+    function tapisPesilat() {
+      const kw = document.getElementById('cariPesilat').value.toLowerCase();
+      const filtered = dataMasterPesilat.filter(p => p.nama.toLowerCase().includes(kw) || p.ic.includes(kw));
+      paparSenaraiMaster(filtered);
+    }
+
+    function togglePesilat(idx, checked) {
+      const item = dataMasterPesilat[idx];
+      if (checked) {
+        pesilatPilihan.push(item);
+      } else {
+        pesilatPilihan = pesilatPilihan.filter(p => p.ic !== item.ic);
+      }
+    }
+
+    async function hantarKeGoogleSheet() {
+      const payload = {
+        penguji: document.getElementById('namaPenguji').value,
+        taliPinggang: document.getElementById('taliPinggang').value,
+        kumpulan: document.getElementById('kumpulan').value,
+        pesilatPilihan: pesilatPilihan
       };
-    });
 
-    const payload = {
-      sheetTitle: currentSheetTitle,
-      dataMarkah: dataMarkah
-    };
+      document.body.style.cursor = 'wait';
 
-    document.body.style.cursor = 'wait';
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
 
-    try {
-      const res = await fetch('/api/simpan-markah', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        const result = await res.json();
+        document.body.style.cursor = 'default';
+
+        if (result.success) {
+          currentSheetTitle = result.sheetTitle;
+          binaJadualPemarkahan(payload);
+          tunjukLangkah(3);
+        } else {
+          alert('Gagal mencipta sheet: ' + result.message);
+        }
+      } catch (err) {
+        document.body.style.cursor = 'default';
+        alert('Ralat semasa menghantar data ke Google Sheet.');
+      }
+    }
+
+    function binaJadualPemarkahan(data) {
+      document.getElementById('dispPenguji').innerText = data.penguji;
+      document.getElementById('dispTaliPinggang').innerText = data.taliPinggang;
+      document.getElementById('dispKumpulan').innerText = data.kumpulan;
+
+      const tbody = document.getElementById('jadualPemarkahan');
+      tbody.innerHTML = data.pesilatPilihan.map((p, i) => `
+        <tr class="border-b">
+          <td class="p-2 border font-medium">${p.nama}</td>
+          <td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m1_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m2_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m3_${i}"></td>
+          <td class="p-1 border"><input type="number" max="20" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m4_${i}"></td>
+          <td class="p-1 border"><input type="number" max="20" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m5_${i}"></td>
+          <td class="p-1 border"><input type="number" max="15" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m6_${i}"></td>
+          <td class="p-1 border text-center font-bold bg-yellow-50" id="total_${i}">0</td>
+        </tr>
+      `).join('');
+    }
+
+    function kiraTotal(idx) {
+      let sum = 0;
+      for (let j = 1; j <= 6; j++) {
+        sum += Number(document.getElementById(`m${j}_${idx}`).value || 0);
+      }
+      document.getElementById(`total_${idx}`).innerText = sum;
+    }
+
+    async function simpanMarkahAkhir() {
+      let dataMarkah = pesilatPilihan.map((p, i) => {
+        return {
+          nama: p.nama,
+          ic: p.ic,
+          gelanggang: p.gelanggang,
+          m1: Number(document.getElementById(`m1_${i}`).value || 0),
+          m2: Number(document.getElementById(`m2_${i}`).value || 0),
+          m3: Number(document.getElementById(`m3_${i}`).value || 0),
+          m4: Number(document.getElementById(`m4_${i}`).value || 0),
+          m5: Number(document.getElementById(`m5_${i}`).value || 0),
+          m6: Number(document.getElementById(`m6_${i}`).value || 0),
+          jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
+        };
       });
 
-      const result = await res.json();
-      document.body.style.cursor = 'default';
+      const payload = {
+        action: 'simpanMarkah',
+        sheetTitle: currentSheetTitle,
+        dataMarkah: dataMarkah
+      };
 
-      if (result.success) {
-        alert('✅ ' + result.message);
-      } else {
-        alert('❌ Gagal menyimpan markah: ' + result.message);
+      document.body.style.cursor = 'wait';
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        document.body.style.cursor = 'default';
+
+        if (result.success) {
+          alert('✅ ' + result.message);
+        } else {
+          alert('❌ Gagal menyimpan markah: ' + result.message);
+        }
+      } catch (err) {
+        document.body.style.cursor = 'default';
+        alert('Ralat rangkaian semasa menyimpan markah.');
       }
-    } catch (err) {
-      document.body.style.cursor = 'default';
-      alert('Ralat rangkaian semasa menyimpan markah.');
     }
-  }
-</script>
+  </script>
 </body>
 </html>
