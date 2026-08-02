@@ -28,7 +28,7 @@
         <label class="block text-sm font-medium">Kumpulan / Sesi</label>
         <input type="text" id="kumpulan" class="w-full border p-2 rounded mt-1" value="Kumpulan 1" oninput="simpanDrafUjian()">
       </div>
-      <button onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
+      <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
     </div>
 
     <!-- LANGKAH 2: PILIH PESILAT -->
@@ -37,8 +37,8 @@
       <input type="text" id="cariPesilat" oninput="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded">
       <div id="senaraiMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50"></div>
       <div class="flex gap-2">
-        <button onclick="kembaliLangkah(1)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
-        <button onclick="bukaModal(2)" class="w-1/2 bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
+        <button type="button" onclick="kembaliLangkah(1)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
+        <button type="button" onclick="bukaModal(2)" class="w-1/2 bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
       </div>
     </div>
 
@@ -51,9 +51,9 @@
         <div>Kumpulan: <span id="dispKumpulan" class="text-red-600"></span></div>
       </div>
 
-      <!-- BUTANG TAMBAH PESILAT BAHARU DI LANGKAH 3 -->
+      <!-- BUTANG TAMBAH PESILAT BAHARU -->
       <div class="flex justify-end">
-        <button onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
+        <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
           ➕ Tambah Pesilat
         </button>
       </div>
@@ -66,8 +66,8 @@
       </div>
 
       <div class="flex gap-2">
-        <button onclick="kembaliLangkah(2)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
-        <button onclick="bukaModal(3)" class="w-1/2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">💾 Simpan Ke Google Sheet</button>
+        <button type="button" onclick="kembaliLangkah(2)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
+        <button type="button" onclick="bukaModal(3)" class="w-1/2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">💾 Simpan Ke Google Sheet</button>
       </div>
     </div>
   </div>
@@ -78,8 +78,8 @@
       <h3 class="text-lg font-bold">Pengesahan</h3>
       <p id="modalMessage" class="text-gray-600 text-sm"></p>
       <div class="flex justify-end gap-2">
-        <button onclick="tutupModal()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
-        <button id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">Ya, Teruskan</button>
+        <button type="button" onclick="tutupModal()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
+        <button type="button" id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">Ya, Teruskan</button>
       </div>
     </div>
   </div>
@@ -93,8 +93,8 @@
         Sistem mengesan anda sedang menjalankan ujian sebelum ini yang belum diselesaikan. Adakah anda mahu menyambung sesi tersebut?
       </p>
       <div class="flex justify-center gap-3 pt-2">
-        <button onclick="padamDrafUjian()" class="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-semibold">Mula Ujian Baharu</button>
-        <button onclick="pulihkanUjian()" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded text-sm font-semibold">Sambung Sesi</button>
+        <button type="button" onclick="padamDrafUjian()" class="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-semibold">Mula Ujian Baharu</button>
+        <button type="button" onclick="pulihkanUjian()" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded text-sm font-semibold">Sambung Sesi</button>
       </div>
     </div>
   </div>
@@ -106,7 +106,7 @@
       <input type="text" id="cariTambahPesilat" oninput="tapisPesilatTambah()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded text-sm">
       <div id="senaraiTambahMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50"></div>
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="tutupModalTambahPesilat()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
+        <button type="button" onclick="tutupModalTambahPesilat()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
       </div>
     </div>
   </div>
@@ -372,7 +372,7 @@
         });
 
         rowHtml += `<td class="p-1 border text-center font-bold bg-yellow-50" id="total_${i}">0</td>`;
-        rowHtml += `<td class="p-1 border text-center"><button onclick="buangPesilat(${i})" class="bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded text-xs font-semibold">❌ Buang</button></td></tr>`;
+        rowHtml += `<td class="p-1 border text-center"><button type="button" onclick="buangPesilat(${i})" class="bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded text-xs font-semibold">❌ Buang</button></td></tr>`;
         return rowHtml;
       }).join('');
     }
@@ -380,7 +380,6 @@
     function kemaskiniPaparanJadual(existingMarkah = null) {
       const totalMaks = activeMarkahMaks.reduce((a, b) => a + b, 0);
       
-      // Ambil markah semasa jika tiada markah draf diberikan
       let markahMasaIni = existingMarkah;
       if (!markahMasaIni) {
         markahMasaIni = pesilatPilihan.map((p, i) => {
@@ -399,7 +398,6 @@
         totalMaks: totalMaks
       });
 
-      // Isikan semula markah ke dalam jadual
       markahMasaIni.forEach((mArr, i) => {
         if (i < pesilatPilihan.length) {
           mArr.forEach((val, j) => {
@@ -453,7 +451,7 @@
             <div class="font-semibold text-sm">${p.nama}</div>
             <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
           </div>
-          <button onclick="pilihPesilatTambahan('${p.ic}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700">
+          <button type="button" onclick="pilihPesilatTambahan('${p.ic}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700">
             ➕ Pilih
           </button>
         </div>
@@ -480,47 +478,48 @@
     }
 
     async function simpanMarkahAkhir() {
-  let dataMarkah = pesilatPilihan.map((p, i) => {
-    let mArray = activeKriteria.map((_, j) => Number(document.getElementById(`m_${i}_${j}`).value || 0));
-    return {
-      nama: p.nama,
-      ic: p.ic,
-      gelanggang: p.gelanggang,
-      markahArray: mArray,
-      jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
-    };
-  });
+      let dataMarkah = pesilatPilihan.map((p, i) => {
+        let mArray = activeKriteria.map((_, j) => Number(document.getElementById(`m_${i}_${j}`).value || 0));
+        return {
+          nama: p.nama,
+          ic: p.ic,
+          gelanggang: p.gelanggang,
+          markahArray: mArray,
+          jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
+        };
+      });
 
-  const payload = {
-    action: 'simpanMarkah',
-    sheetTitle: currentSheetTitle,
-    dataMarkah: dataMarkah
-  };
+      const payload = {
+        action: 'simpanMarkah',
+        sheetTitle: currentSheetTitle,
+        dataMarkah: dataMarkah
+      };
 
-  document.body.style.cursor = 'wait';
+      document.body.style.cursor = 'wait';
 
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      redirect: "follow"
-    });
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          redirect: "follow"
+        });
 
-    const result = await res.json();
-    document.body.style.cursor = 'default';
+        const result = await res.json();
+        document.body.style.cursor = 'default';
 
-    if (result.success) {
-      alert('✅ ' + result.message);
-      padamDrafUjian(); // Padam draf telefon sahaja, tapi skrin kekal di Langkah 3
-    } else {
-      alert('❌ Gagal: ' + result.message);
+        if (result.success) {
+          alert('✅ ' + result.message);
+          // Kekalkan paparan Langkah 3 dan simpan keadaan terkini
+          simpanDrafUjian(); 
+        } else {
+          alert('❌ Gagal: ' + result.message);
+        }
+      } catch (err) {
+        document.body.style.cursor = 'default';
+        alert('Ralat rangkaian.');
+      }
     }
-  } catch (err) {
-    document.body.style.cursor = 'default';
-    alert('Ralat rangkaian.');
-  }
-}
   </script>
 </body>
 </html>
