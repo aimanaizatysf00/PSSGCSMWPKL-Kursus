@@ -16,17 +16,17 @@
       <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
       <div>
         <label class="block text-sm font-medium">Nama Penguji</label>
-        <input type="text" id="namaPenguji" class="w-full border p-2 rounded mt-1" placeholder="Masukkan nama anda">
+        <input type="text" id="namaPenguji" class="w-full border p-2 rounded mt-1" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
       </div>
       <div>
         <label class="block text-sm font-medium">Tali Pinggang / Peringkat</label>
-        <select id="taliPinggang" class="w-full border p-2 rounded mt-1">
+        <select id="taliPinggang" class="w-full border p-2 rounded mt-1" onchange="simpanDrafUjian()">
           <option value="">Memuatkan senarai tali pinggang...</option>
         </select>
       </div>
       <div>
         <label class="block text-sm font-medium">Kumpulan / Sesi</label>
-        <input type="text" id="kumpulan" class="w-full border p-2 rounded mt-1" value="Kumpulan 1">
+        <input type="text" id="kumpulan" class="w-full border p-2 rounded mt-1" value="Kumpulan 1" oninput="simpanDrafUjian()">
       </div>
       <button onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
     </div>
@@ -103,7 +103,6 @@
     let activeKriteria = [];
     let activeMarkahMaks = [];
 
-    // KEY UNTUK LOCALSTORAGE
     const DRAFT_KEY = "SILAT_EXAM_DRAFT_V1";
 
     window.onload = async function() {
@@ -116,7 +115,6 @@
           isiDropdownTaliPinggang();
           paparSenaraiMaster(dataMasterPesilat);
 
-          // Semak jika ada simpanan draf ujian
           const draftExist = localStorage.getItem(DRAFT_KEY);
           if (draftExist) {
             document.getElementById('resumeModal').classList.remove('hidden');
@@ -143,9 +141,7 @@
       });
     }
 
-    // FUNGSI UNTUK SIMPAN DRAF SECARA AUTOMATIK
     function simpanDrafUjian() {
-      // Ambil markah semasa jika di Langkah 3
       let markahDraft = [];
       if (currentStep === 3) {
         markahDraft = pesilatPilihan.map((p, i) => {
@@ -171,7 +167,6 @@
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftState));
     }
 
-    // PULIHKAN DATA BILA TEKAN "SAMBUNG SESI"
     function pulihkanUjian() {
       document.getElementById('resumeModal').classList.add('hidden');
       const rawData = localStorage.getItem(DRAFT_KEY);
@@ -179,7 +174,7 @@
 
       const draft = JSON.parse(rawData);
 
-      // Isi input asal
+      // Pulihkan data borang
       document.getElementById('namaPenguji').value = draft.penguji || '';
       document.getElementById('taliPinggang').value = draft.taliPinggang || '';
       document.getElementById('kumpulan').value = draft.kumpulan || '';
@@ -189,18 +184,21 @@
       activeKriteria = draft.activeKriteria || [];
       activeMarkahMaks = draft.activeMarkahMaks || [];
 
-      // Tandakan checkbox pesilat pilihan di Langkah 2
+      // Kemaskini senarai & paparan checkbox Langkah 2
       paparSenaraiMaster(dataMasterPesilat);
-      pesilatPilihan.forEach(selected => {
-        const idx = dataMasterPesilat.findIndex(m => m.ic === selected.ic);
-        if (idx !== -1) {
-          const checkboxes = document.querySelectorAll('#senaraiMaster input[type="checkbox"]');
-          if (checkboxes[idx]) checkboxes[idx].checked = true;
-        }
-      });
+      if (pesilatPilihan.length > 0) {
+        const checkboxes = document.querySelectorAll('#senaraiMaster input[type="checkbox"]');
+        dataMasterPesilat.forEach((m, idx) => {
+          if (pesilatPilihan.some(p => p.ic === m.ic)) {
+            if (checkboxes[idx]) checkboxes[idx].checked = true;
+          }
+        });
+      }
 
-      // Jika sebelum refresh berada di Langkah 3
-      if (draft.currentStep === 3 && activeKriteria.length > 0) {
+      const targetStep = draft.currentStep || 1;
+
+      // Jika dikehendaki pulih di Langkah 3
+      if (targetStep === 3 && activeKriteria.length > 0) {
         const totalMaks = activeMarkahMaks.reduce((a, b) => a + b, 0);
         binaJadualPemarkahan({
           penguji: draft.penguji,
@@ -210,7 +208,7 @@
           totalMaks: totalMaks
         });
 
-        // Isikan semula markah yang ditip sebelum ini
+        // Masukkan semula nilai markah yang pernah ditaip
         if (draft.markahDraft && draft.markahDraft.length > 0) {
           draft.markahDraft.forEach((mArr, i) => {
             mArr.forEach((val, j) => {
@@ -222,10 +220,9 @@
         }
       }
 
-      tunjukLangkah(draft.currentStep || 1);
+      tunjukLangkah(targetStep);
     }
 
-    // PADAM DRAF BILA MULA BARU ATAU SELESAI SIMPAN
     function padamDrafUjian() {
       localStorage.removeItem(DRAFT_KEY);
       document.getElementById('resumeModal').classList.add('hidden');
@@ -260,7 +257,7 @@
       document.getElementById(`step-${currentStep}`).classList.add('hidden');
       document.getElementById(`step-${step}`).classList.remove('hidden');
       currentStep = step;
-      simpanDrafUjian(); // Simpan langkah terkini ke localstorage
+      simpanDrafUjian();
     }
 
     function kembaliLangkah(step) { tunjukLangkah(step); }
@@ -290,8 +287,11 @@
 
     function togglePesilat(idx, checked) {
       const item = dataMasterPesilat[idx];
-      if (checked) pesilatPilihan.push(item);
-      else pesilatPilihan = pesilatPilihan.filter(p => p.ic !== item.ic);
+      if (checked) {
+        if(!pesilatPilihan.some(p => p.ic === item.ic)) pesilatPilihan.push(item);
+      } else {
+        pesilatPilihan = pesilatPilihan.filter(p => p.ic !== item.ic);
+      }
       simpanDrafUjian();
     }
 
@@ -327,9 +327,9 @@
         document.body.style.cursor = 'default';
 
         if (result.success) {
-          currentSheetTitle = result.sheetTitle;
+          currentSheetTitle = result.sheetTitle; // Kemaskini tajuk sheet
           binaJadualPemarkahan(payload);
-          tunjukLangkah(3);
+          tunjukLangkah(3); // Ini akan memanggil simpanDrafUjian() berserta currentSheetTitle baharu
         } else {
           alert('Gagal: ' + result.message);
         }
@@ -370,8 +370,6 @@
         sum += Number(document.getElementById(`m_${idxPesilat}_${j}`).value || 0);
       });
       document.getElementById(`total_${idxPesilat}`).innerText = sum;
-      
-      // Auto-save markah semasa sedang ditaip
       simpanDrafUjian();
     }
 
@@ -408,8 +406,8 @@
 
         if (result.success) {
           alert('✅ ' + result.message);
-          padamDrafUjian(); // Padam simpanan tempatan selepas berjaya simpan ke Google Sheet
-          window.location.reload(); // Reload ke skrin asal
+          padamDrafUjian();
+          window.location.reload();
         } else {
           alert('❌ Gagal: ' + result.message);
         }
