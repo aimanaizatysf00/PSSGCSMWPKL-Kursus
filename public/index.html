@@ -10,15 +10,15 @@
 
   <div class="max-w-4xl mx-auto space-y-4">
     
-    <!-- BANNER SESI AKTIF / HISTORY (TAMPIL BILA ADA DRAF) -->
+    <!-- BANNER SESI AKTIF / HISTORY (TAMPIL HANYA BILA DI MENU/STEP 1) -->
     <div id="activeSessionCard" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
         <div class="text-xs font-bold text-amber-700 uppercase tracking-wide">📌 Sesi Ujian Sedang Berjalan</div>
         <div id="sessionSummary" class="text-sm font-semibold text-gray-800 mt-0.5"></div>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700">
-          ➔ Sambung
+        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700 flex items-center gap-1">
+          ➔ Sambung Ujian
         </button>
         <button type="button" onclick="padamDrafUjian()" class="bg-gray-200 text-gray-600 px-2 py-1.5 rounded text-xs hover:bg-gray-300" title="Batal Sesi Ini">
           🗑️
@@ -138,7 +138,7 @@
           isiDropdownTaliPinggang();
           paparSenaraiMaster(dataMasterPesilat);
 
-          // Semak jika ada draf simpanan
+          // Semak jika ada draf simpanan semasa berada di Langkah 1 (Menu)
           semakDanPaparBannerSesi();
         } else {
           alert('Gagal muat tetapan: ' + result.message);
@@ -167,7 +167,8 @@
       const banner = document.getElementById('activeSessionCard');
       const summary = document.getElementById('sessionSummary');
 
-      if (rawData) {
+      // Banner hanya dipaparkan jika wujud draf DAN pengguna berada di Langkah 1 (Menu)
+      if (rawData && currentStep === 1) {
         const draft = JSON.parse(rawData);
         summary.innerText = `${draft.penguji || 'Penguji'} | ${draft.taliPinggang || '-'} (${draft.kumpulan || '-'}) • ${draft.pesilatPilihan ? draft.pesilatPilihan.length : 0} Pesilat`;
         banner.classList.remove('hidden');
