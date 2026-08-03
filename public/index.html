@@ -180,7 +180,6 @@
         
         const result = await res.json();
 
-        // Arahan Reset dari Admin
         if (result.success && result.forceReset) {
           alert("⚠️ Admin telah mereset sesi peranti anda.");
           padamDrafUjian();
@@ -204,7 +203,6 @@
 
           hantarLogAktiviti("Buka Aplikasi");
 
-          // Semakan notifikasi dan ping log peranti
           semakPengumuman();
           setInterval(() => {
             semakPengumuman();
@@ -284,7 +282,7 @@
         taliPinggang: document.getElementById('taliPinggang').value,
         kumpulan: document.getElementById('kumpulan').value,
         pesilatPilihan: pesilatPilihan,
-        currentSheetTitle: currentSheetTitle,
+        currentSheetTitle: currentSheetTitle, // Disimpan secara konsisten
         activeKriteria: activeKriteria,
         activeMarkahMaks: activeMarkahMaks,
         markahDraft: markahDraft
@@ -307,7 +305,6 @@
       pesilatPilihan = draft.pesilatPilihan || [];
       currentSheetTitle = draft.currentSheetTitle || '';
 
-      // PENAMBAHABIKAN: Paksa penukaran String ke Array jika draf lama berbentuk String
       let ak = draft.activeKriteria || [];
       let am = draft.activeMarkahMaks || [];
 
@@ -345,6 +342,7 @@
     function padamDrafUjian() {
       localStorage.removeItem(DRAFT_KEY);
       pesilatPilihan = [];
+      currentSheetTitle = "";
       paparSenaraiMaster(dataMasterPesilat);
       semakDanPaparBannerSesi();
       tunjukLangkah(1);
@@ -436,10 +434,6 @@
         return;
       }
 
-      // =========================================================
-      // PERBAIKAN PENTING DI SINI:
-      // Memastikan kriteria dan markahMaks sentiasa berbentuk Array
-      // =========================================================
       let kriteriaRaw = config.kriteria || [];
       let markahRaw = config.markahMaks || [];
 
@@ -481,6 +475,7 @@
 
         if (result.success) {
           currentSheetTitle = result.sheetTitle;
+          simpanDrafUjian(); // TERUS SIMPAN SHEET TITLE KE LOCALSTORAGE
           binaJadualPemarkahan(payload);
           tunjukLangkah(3);
         } else {
@@ -628,6 +623,12 @@
     }
 
     async function simpanMarkahAkhir() {
+      // Pastikan ada tajuk sheet sebelum menghantar
+      if (!currentSheetTitle) {
+        alert("Ralat: Tajuk sheet tidak ditemui. Sila kembali ke Langkah 2 dan klik Seterusnya.");
+        return;
+      }
+
       let dataMarkah = pesilatPilihan.map((p, i) => {
         let mArray = activeKriteria.map((_, j) => {
           const el = document.getElementById(`m_${i}_${j}`);
