@@ -137,6 +137,7 @@
   </div>
 
   <script>
+    // PASTIKAN URL WEB APP ANDA TEPAT
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRoI18zsP9D5xivmUgZ_syoAHz9SAaDolryIFFf1_gqvtqKkhnFQ4Vm-Okh3m3DB0nzw/exec"; 
 
     let currentStep = 1;
@@ -150,7 +151,6 @@
 
     const DRAFT_KEY = "SILAT_EXAM_DRAFT_V1";
 
-    // JANA / AMBIL ID UNIK TELEFON
     function getDeviceId() {
       let devId = localStorage.getItem("SILAT_DEVICE_ID");
       if (!devId) {
@@ -160,7 +160,7 @@
       return devId;
     }
 
-    // FUNGSI HANTAR LOG AKTIVITI KE BACKEND
+    // LOG AKTIVITI (HANYA MENGEMASKINI LOG DEVICE DAFTAR)
     async function hantarLogAktiviti(peringkatPesan) {
       try {
         const payload = {
@@ -186,7 +186,7 @@
           location.reload();
         }
       } catch (e) {
-        console.log("Log gagal hantar:", e);
+        console.log("Log gagal dihantar:", e);
       }
     }
 
@@ -282,7 +282,7 @@
         taliPinggang: document.getElementById('taliPinggang').value,
         kumpulan: document.getElementById('kumpulan').value,
         pesilatPilihan: pesilatPilihan,
-        currentSheetTitle: currentSheetTitle, // Disimpan secara konsisten
+        currentSheetTitle: currentSheetTitle,
         activeKriteria: activeKriteria,
         activeMarkahMaks: activeMarkahMaks,
         markahDraft: markahDraft
@@ -348,43 +348,12 @@
       tunjukLangkah(1);
     }
 
-    function bukaModal(step) {
-      const modal = document.getElementById('confirmModal');
-      const msg = document.getElementById('modalMessage');
-      const btn = document.getElementById('modalConfirmBtn');
-
-      if (step === 1) {
-        const penguji = document.getElementById('namaPenguji').value.trim();
-        const tp = document.getElementById('taliPinggang').value;
-        if (!penguji) return alert('Sila isi nama penguji.');
-        if (!tp) return alert('Sila pilih tali pinggang.');
-        msg.innerText = `Teruskan sebagai Penguji: "${penguji}" untuk Ujian "${tp}"?`;
-        btn.onclick = () => { tutupModal(); tunjukLangkah(2); };
-      } else if (step === 2) {
-        if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
-        msg.innerText = `Sahkan pilihan ${pesilatPilihan.length} pesilat? Sheet baharu akan dicipta.`;
-        btn.onclick = () => { tutupModal(); hantarKeGoogleSheet(); };
-      } else if (step === 3) {
-        msg.innerText = `Hantar dan simpan semua markah terkini ke Google Sheet?`;
-        btn.onclick = () => { tutupModal(); simpanMarkahAkhir(); };
-      }
-      modal.classList.remove('hidden');
-    }
-
-    function tutupModal() { 
-      document.getElementById('confirmModal').classList.add('hidden'); 
-    }
-
     function tunjukLangkah(step) {
       document.getElementById(`step-${currentStep}`).classList.add('hidden');
       document.getElementById(`step-${step}`).classList.remove('hidden');
       currentStep = step;
       simpanDrafUjian();
       hantarLogAktiviti(`Berada di Langkah ${step}`);
-    }
-
-    function kembaliLangkah(step) { 
-      tunjukLangkah(step); 
     }
 
     function paparSenaraiMaster(list) {
@@ -405,12 +374,6 @@
           </label>
         `;
       }).join('');
-    }
-
-    function tapisPesilat() {
-      const kw = document.getElementById('cariPesilat').value.toLowerCase();
-      const filtered = dataMasterPesilat.filter(p => p.nama.toLowerCase().includes(kw) || p.ic.includes(kw));
-      paparSenaraiMaster(filtered);
     }
 
     function togglePesilatByIC(ic, checked) {
@@ -475,7 +438,7 @@
 
         if (result.success) {
           currentSheetTitle = result.sheetTitle;
-          simpanDrafUjian(); // TERUS SIMPAN SHEET TITLE KE LOCALSTORAGE
+          simpanDrafUjian();
           binaJadualPemarkahan(payload);
           tunjukLangkah(3);
         } else {
@@ -556,59 +519,15 @@
 
     function buangPesilat(index) {
       if (pesilatPilihan.length <= 1) {
-        alert("Atas sebab keselamatan, sekurang-kurangnya seorang pesilat mesti kekal.");
+        alert("Sekurang-kurangnya seorang pesilat mesti kekal.");
         return;
       }
 
-      const disahkan = confirm(`Adakah anda pasti mahu membuang ${pesilatPilihan[index].nama} dari senarai?`);
-      if (!disahkan) return;
+      if (!confirm(`Padam ${pesilatPilihan[index].nama} dari senarai?`)) return;
 
       pesilatPilihan.splice(index, 1);
       kemaskiniCheckboxLangkah2();
       kemaskiniPaparanJadual();
-    }
-
-    function bukaModalTambahPesilat() {
-      tapisPesilatTambah();
-      document.getElementById('tambahPesilatModal').classList.remove('hidden');
-    }
-
-    function tutupModalTambahPesilat() {
-      document.getElementById('tambahPesilatModal').classList.add('hidden');
-    }
-
-    function tapisPesilatTambah() {
-      const kw = document.getElementById('cariTambahPesilat').value.toLowerCase();
-      const bakiPesilat = dataMasterPesilat.filter(p => !pesilatPilihan.some(sel => sel.ic === p.ic));
-      const filtered = bakiPesilat.filter(p => p.nama.toLowerCase().includes(kw) || p.ic.includes(kw));
-
-      const box = document.getElementById('senaraiTambahMaster');
-      if (filtered.length === 0) {
-        box.innerHTML = `<p class="text-center text-gray-500 py-4 text-xs">Tiada pesilat lain dijumpai.</p>`;
-        return;
-      }
-
-      box.innerHTML = filtered.map((p) => `
-        <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:bg-gray-100">
-          <div>
-            <div class="font-semibold text-sm text-gray-800">${p.nama}</div>
-            <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
-          </div>
-          <button type="button" onclick="pilihPesilatTambahan('${p.ic}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700 transition">
-            ➕ Pilih
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function pilihPesilatTambahan(ic) {
-      const target = dataMasterPesilat.find(p => p.ic === ic);
-      if (target) {
-        pesilatPilihan.push(target);
-        kemaskiniCheckboxLangkah2();
-        kemaskiniPaparanJadual();
-        tutupModalTambahPesilat();
-      }
     }
 
     function kiraTotal(idxPesilat) {
@@ -619,13 +538,13 @@
       });
       const totalEl = document.getElementById(`total_${idxPesilat}`);
       if (totalEl) totalEl.innerText = sum;
-      simpanDrafUjian();
+      
+      simpanDrafUjian(); // Simpan LocalStorage Sahaja
     }
 
     async function simpanMarkahAkhir() {
-      // Pastikan ada tajuk sheet sebelum menghantar
       if (!currentSheetTitle) {
-        alert("Ralat: Tajuk sheet tidak ditemui. Sila kembali ke Langkah 2 dan klik Seterusnya.");
+        alert("Ralat: Tajuk sheet tidak ditemui!");
         return;
       }
 
@@ -666,7 +585,7 @@
         if (result.success) {
           alert('✅ ' + result.message);
           simpanDrafUjian(); 
-          hantarLogAktiviti("Selesai Hantar Markah Ujian");
+          hantarLogAktiviti("Selesai Simpan Markah");
         } else {
           alert('❌ Gagal: ' + result.message);
         }
@@ -675,6 +594,6 @@
         alert('Ralat rangkaian.');
       }
     }
-  </script>
+</script>
 </body>
 </html>
