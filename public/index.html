@@ -160,7 +160,7 @@
       return devId;
     }
 
-    // LOG AKTIVITI (HANYA MENGEMASKINI LOG DEVICE DAFTAR)
+    // LOG AKTIVITI PERANTI
     async function hantarLogAktiviti(peringkatPesan) {
       try {
         const payload = {
@@ -217,15 +217,18 @@
       }
     };
 
+    // --- SEBAHAGIAN PEMBETULAN: PENGUMUMAN ADMIN (TIDAK BERULANG) ---
     async function semakPengumuman() {
       try {
         const res = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
         const result = await res.json();
-        if (result.success && result.notif) {
-          if (result.notif.id !== lastNotifId) {
+        if (result.success && result.notif && result.notif.id) {
+          const currentSavedId = localStorage.getItem("LAST_NOTIF_ID");
+          // Hanya paparkan jika ID notifikasi baharu dan berbeza daripada yang pernah dibaca
+          if (String(result.notif.id) !== String(currentSavedId)) {
             document.getElementById('notifMesej').innerText = result.notif.message || result.notif.mesej;
             document.getElementById('notifModal').classList.remove('hidden');
-            lastNotifId = result.notif.id;
+            lastNotifId = String(result.notif.id);
           }
         }
       } catch(e) { 
@@ -234,8 +237,40 @@
     }
 
     function tutupNotif() {
-      localStorage.setItem("LAST_NOTIF_ID", lastNotifId);
+      if (lastNotifId) {
+        localStorage.setItem("LAST_NOTIF_ID", lastNotifId);
+      }
       document.getElementById('notifModal').classList.add('hidden');
+    }
+
+    // --- SEBAHAGIAN PEMBETULAN: FUNGSI MODAL & NAVIGASI LANGKAH (NEXT STEP) ---
+    function bukaModal(step) {
+      const modal = document.getElementById('confirmModal');
+      const msg = document.getElementById('modalMessage');
+      const btn = document.getElementById('modalConfirmBtn');
+
+      if (step === 1) {
+        const penguji = document.getElementById('namaPenguji').value.trim();
+        const tp = document.getElementById('taliPinggang').value;
+        if (!penguji) return alert('Sila isi nama penguji.');
+        if (!tp) return alert('Sila pilih tali pinggang.');
+        
+        msg.innerText = `Teruskan sebagai Penguji: "${penguji}" untuk Ujian "${tp}"?`;
+        btn.onclick = () => { tutupModal(); tunjukLangkah(2); };
+      } else if (step === 2) {
+        if (pesilatPilihan.length === 0) return alert('Sila pilih sekurang-kurangnya seorang pesilat.');
+        msg.innerText = `Sahkan pilihan ${pesilatPilihan.length} pesilat? Sheet baharu akan dicipta.`;
+        btn.onclick = () => { tutupModal(); hantarKeGoogleSheet(); };
+      } else if (step === 3) {
+        msg.innerText = `Hantar dan simpan semua markah terkini ke Google Sheet?`;
+        btn.onclick = () => { tutupModal(); simpanMarkahAkhir(); };
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function tutupModal() { 
+      const modal = document.getElementById('confirmModal');
+      if (modal) modal.classList.add('hidden'); 
     }
 
     function isiDropdownTaliPinggang() {
@@ -354,6 +389,10 @@
       currentStep = step;
       simpanDrafUjian();
       hantarLogAktiviti(`Berada di Langkah ${step}`);
+    }
+
+    function kembaliLangkah(step) { 
+      tunjukLangkah(step); 
     }
 
     function paparSenaraiMaster(list) {
@@ -539,7 +578,7 @@
       const totalEl = document.getElementById(`total_${idxPesilat}`);
       if (totalEl) totalEl.innerText = sum;
       
-      simpanDrafUjian(); // Simpan LocalStorage Sahaja
+      simpanDrafUjian();
     }
 
     async function simpanMarkahAkhir() {
