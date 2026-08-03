@@ -3,121 +3,165 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Admin - Log Telefon & Kawalan</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; padding: 20px; }
-    .card-log { border-left: 5px solid #0d6efd; margin-bottom: 15px; }
-    .status-badge { font-size: 0.8rem; }
-  </style>
+  <title>Dashboard Urus Setia - Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen p-4 text-gray-800">
 
-  <div class="container">
-    <h2 class="mb-4 text-primary">📊 Dashboard Admin: Log Telefon Penguji</h2>
-
-    <!-- Senarai Telefon Penguji -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Status Telefon Penguji (Real-Time)</h5>
-        <button class="btn btn-sm btn-outline-light" onclick="loadAdminLogs()">🔄 Refresh Log</button>
+  <div class="max-w-5xl mx-auto space-y-6">
+    
+    <!-- TAJUK DOKUMEN -->
+    <div class="bg-slate-800 text-white p-6 rounded-xl shadow-md flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold">DASHBOARD URUS SETIA</h1>
+        <p class="text-xs text-slate-300">Pemantauan Aktiviti Penguji & Kawalan Sesi Ujian</p>
       </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Device ID</th>
-                <th>Nama Penguji</th>
-                <th>Gelanggang</th>
-                <th>Peringkat Terkini</th>
-                <th>Pesilat Sedang Diuji</th>
-                <th>Kemaskini Terakhir</th>
-                <th>Tindakan Admin</th>
-              </tr>
-            </thead>
-            <tbody id="logTableBody">
-              <tr>
-                <td colspan="7" class="text-center text-muted">Mengecas data log...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <button onclick="muatLogAdmin()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold border border-slate-500">
+        🔄 Refresh Data
+      </button>
+    </div>
+
+    <!-- BORANG HANTAR PENGUMUMAN / NOTIFIKASI -->
+    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-amber-500 space-y-3">
+      <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <span>📢</span> Hantar Pengumuman Pop-Up Ke Penguji
+      </h2>
+      <div class="flex gap-2">
+        <input type="text" id="mesejNotif" placeholder="Tulis mesej pengumuman di sini..." class="w-full border p-2 rounded focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm">
+        <button onclick="hantarNotif()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded text-sm transition">
+          Hantar
+        </button>
       </div>
     </div>
+
+    <!-- JADUAL LOG PERANTI PENGUJI -->
+    <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="text-lg font-bold text-gray-800">📱 Log & Status Telefon Penguji (Real-Time)</h2>
+        <span class="text-xs text-gray-500">Dikemaskini automatik setiap 5 saat</span>
+      </div>
+
+      <div class="overflow-x-auto border rounded-lg">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="p-3 border">ID Peranti</th>
+              <th class="p-3 border">Penguji</th>
+              <th class="p-3 border">Gelanggang</th>
+              <th class="p-3 border">Lokasi / Peringkat</th>
+              <th class="p-3 border">Senarai Pesilat</th>
+              <th class="p-3 border">Kemaskini Terakhir</th>
+              <th class="p-3 border text-center">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="jadualLog">
+            <tr>
+              <td colspan="7" class="p-4 text-center text-gray-500">Memuatkan data peranti...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-<script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbw8h2DRNtT8cn0hPLJrZCYtk4Vl3RIRsDr3wXyXLigOwdOul6fYamhcy-f6fcRgMvdR_w/exec";
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8h2DRNtT8cn0hPLJrZCYtk4Vl3RIRsDr3wXyXLigOwdOul6fYamhcy-f6fcRgMvdR_w/exec"; 
 
-  function loadAdminLogs() {
-    fetch(`${GAS_URL}?action=getAdminLogs`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          renderLogTable(data.logs);
+    window.onload = function() {
+      muatLogAdmin();
+      setInterval(muatLogAdmin, 5000); // Auto-refresh setiap 5 saat
+    };
+
+    // TARIK LOG AKTIVITI TELEFON DARI GOOGLE APPS SCRIPT
+    async function muatLogAdmin() {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL + "?action=getAdminLogs");
+        const data = await res.json();
+        
+        if (data.success && data.logs) {
+          paparLog(data.logs);
         }
-      })
-      .catch(err => console.error("Ralat ambil log:", err));
-  }
-
-  function renderLogTable(logs) {
-    const tbody = document.getElementById('logTableBody');
-    tbody.innerHTML = '';
-
-    const keys = Object.keys(logs);
-    if (keys.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Tiada peranti dikesan.</td></tr>`;
-      return;
+      } catch (e) {
+        console.error("Gagal muat log admin", e);
+      }
     }
 
-    keys.forEach(devId => {
-      const item = logs[devId];
-      const tr = document.createElement('tr');
+    function paparLog(logsObj) {
+      const tbody = document.getElementById('jadualLog');
+      const keys = Object.keys(logsObj);
 
-      tr.innerHTML = `
-        <td><span class="badge bg-secondary">${item.deviceId}</span></td>
-        <td><strong>${item.penguji}</strong></td>
-        <td>${item.gelanggang}</td>
-        <td><span class="badge bg-info text-dark">${item.peringkat}</span></td>
-        <td>${item.pesilat}</td>
-        <td><small class="text-muted">${item.lastUpdate}</small></td>
-        <td>
-          <button class="btn btn-sm btn-warning mb-1" onclick="resetDevice('${item.deviceId}', 'session')">
-            🔄 Reset Sesi
-          </button>
-          <button class="btn btn-sm btn-outline-secondary mb-1" onclick="resetDevice('${item.deviceId}', 'history')">
-            🗑️ Clear Noti History
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+      if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Tiada aktiviti peranti direkodkan lagi.</td></tr>`;
+        return;
+      }
 
-  function resetDevice(devId, resetType) {
-    const actionName = resetType === 'session' ? 'Kembali ke Skrin Utama (Reset Sesi)' : 'Padam Sejarah Notifikasi';
-    if (!confirm(`Adakah anda pasti untuk ${actionName} pada telefon [${devId}]?`)) return;
+      tbody.innerHTML = keys.map(devId => {
+        const item = logsObj[devId];
+        const isReset = item.status === 'RESET_REQUESTED';
 
-    fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'resetDevice',
-        deviceId: devId,
-        resetType: resetType
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      alert(data.message);
-      loadAdminLogs();
-    });
-  }
+        return `
+          <tr class="border-b hover:bg-slate-50">
+            <td class="p-3 border font-mono text-xs text-slate-600">${item.deviceId || devId}</td>
+            <td class="p-3 border font-bold text-gray-800">${item.penguji}</td>
+            <td class="p-3 border text-gray-600">${item.gelanggang}</td>
+            <td class="p-3 border">
+              <span class="px-2 py-1 rounded text-xs font-semibold ${isReset ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'}">
+                ${item.peringkat}
+              </span>
+            </td>
+            <td class="p-3 border text-xs text-gray-600 max-w-xs truncate">${item.pesilat}</td>
+            <td class="p-3 border text-xs text-gray-500">${item.lastUpdate}</td>
+            <td class="p-3 border text-center">
+              <button onclick="resetSesiPeranti('${item.deviceId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition">
+                Reset Peranti
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
 
-  // Auto-refresh senarai log setiap 5 saat
-  setInterval(loadAdminLogs, 5000);
-  loadAdminLogs();
-</script>
+    // HANTAR NOTIFIKASI POP-UP
+    async function hantarNotif() {
+      const mesej = document.getElementById('mesejNotif').value.trim();
+      if (!mesej) return alert("Sila masukkan mesej.");
 
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'sendNotif', message: mesej })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ " + result.message);
+          document.getElementById('mesejNotif').value = "";
+        }
+      } catch(e) {
+        alert("Gagal menghantar notifikasi.");
+      }
+    }
+
+    // PAKSA RESET SESI PERANTI PENGUJI
+    async function resetSesiPeranti(devId) {
+      if (!confirm(`Pasti mahu mereset sesi peranti [${devId}]? Penguji akan dikembalikan ke Skrin Utama.`)) return;
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'resetDevice', deviceId: devId, resetType: 'session' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Arahan reset dihantar.");
+          muatLogAdmin();
+        }
+      } catch(e) {
+        alert("Gagal mereset peranti.");
+      }
+    }
+  </script>
 </body>
 </html>
