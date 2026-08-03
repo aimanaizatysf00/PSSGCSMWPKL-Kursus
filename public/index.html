@@ -40,24 +40,33 @@
       <h1 class="text-2xl font-bold text-center text-red-700 mb-6">SISTEM PEMARKAHAN SILAT</h1>
 
       <!-- LANGKAH 1 -->
-      <div id="step-1" class="space-y-4">
-        <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Nama Penguji</label>
-          <input type="text" id="namaPenguji" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Tali Pinggang / Peringkat</label>
-          <select id="taliPinggang" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" onchange="simpanDrafUjian()">
-            <option value="">Memuatkan senarai tali pinggang...</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Kumpulan / Gelanggang</label>
-          <input type="text" id="kumpulan" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" value="Kumpulan 1" oninput="simpanDrafUjian()">
-        </div>
-        <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
-      </div>
+<div id="step-1" class="space-y-4">
+  <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Nama Penguji</label>
+    <input type="text" id="namaPenguji" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Tali Pinggang / Peringkat</label>
+    <select id="taliPinggang" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" onchange="simpanDrafUjian()">
+      <option value="">Memuatkan senarai tali pinggang...</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Kumpulan</label>
+    <input 
+      type="number" 
+      id="kumpulan" 
+      min="1"
+      inputmode="numeric"
+      class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" 
+      value="1" 
+      placeholder="Masukkan nombor kumpulan (cth: 1)"
+      oninput="this.value = this.value.replace(/[^0-9]/g, ''); simpanDrafUjian();"
+    >
+  </div>
+  <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
+</div>
 
       <!-- LANGKAH 2 -->
       <div id="step-2" class="space-y-4 hidden">
