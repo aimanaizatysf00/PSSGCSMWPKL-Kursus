@@ -306,8 +306,20 @@
       
       pesilatPilihan = draft.pesilatPilihan || [];
       currentSheetTitle = draft.currentSheetTitle || '';
-      activeKriteria = draft.activeKriteria || [];
-      activeMarkahMaks = draft.activeMarkahMaks || [];
+
+      // PENAMBAHABIKAN: Paksa penukaran String ke Array jika draf lama berbentuk String
+      let ak = draft.activeKriteria || [];
+      let am = draft.activeMarkahMaks || [];
+
+      if (typeof ak === 'string') {
+        ak = ak.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      if (typeof am === 'string') {
+        am = am.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+      }
+
+      activeKriteria = ak;
+      activeMarkahMaks = am;
 
       paparSenaraiMaster(dataMasterPesilat);
       kemaskiniCheckboxLangkah2();
@@ -424,8 +436,23 @@
         return;
       }
 
-      activeKriteria = config.kriteria || [];
-      activeMarkahMaks = config.markahMaks || [];
+      // =========================================================
+      // PERBAIKAN PENTING DI SINI:
+      // Memastikan kriteria dan markahMaks sentiasa berbentuk Array
+      // =========================================================
+      let kriteriaRaw = config.kriteria || [];
+      let markahRaw = config.markahMaks || [];
+
+      if (typeof kriteriaRaw === 'string') {
+        kriteriaRaw = kriteriaRaw.split(',').map(item => item.trim()).filter(Boolean);
+      }
+      if (typeof markahRaw === 'string') {
+        markahRaw = markahRaw.split(',').map(item => Number(item.trim())).filter(n => !isNaN(n));
+      }
+
+      activeKriteria = Array.isArray(kriteriaRaw) ? kriteriaRaw : [kriteriaRaw];
+      activeMarkahMaks = Array.isArray(markahRaw) ? markahRaw : [markahRaw];
+
       const totalMaks = activeMarkahMaks.reduce((a, b) => a + b, 0);
 
       const payload = {
@@ -475,7 +502,7 @@
         <th class="p-2 border text-gray-700">Gelanggang</th>`;
       
       activeKriteria.forEach((k, idx) => {
-        headHtml += `<th class="p-2 border text-center text-gray-700">${k}<br><span class="text-xs font-normal text-gray-500">(${activeMarkahMaks[idx]})</span></th>`;
+        headHtml += `<th class="p-2 border text-center text-gray-700">${k}<br><span class="text-xs font-normal text-gray-500">(${activeMarkahMaks[idx] || 0})</span></th>`;
       });
       
       headHtml += `<th class="p-2 border text-center text-gray-700">Jumlah<br><span class="text-xs font-normal text-gray-500">(${data.totalMaks})</span></th>
@@ -489,7 +516,7 @@
         let rowHtml = `<tr class="border-b hover:bg-gray-50"><td class="p-2 border font-medium text-gray-800">${p.nama}</td><td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>`;
         
         activeKriteria.forEach((_, j) => {
-          rowHtml += `<td class="p-1 border text-center"><input type="number" min="0" max="${activeMarkahMaks[j]}" value="0" class="w-16 text-center border rounded p-1 focus:ring-1 focus:ring-red-500 focus:outline-none" oninput="kiraTotal(${i})" id="m_${i}_${j}"></td>`;
+          rowHtml += `<td class="p-1 border text-center"><input type="number" min="0" max="${activeMarkahMaks[j] || 100}" value="0" class="w-16 text-center border rounded p-1 focus:ring-1 focus:ring-red-500 focus:outline-none" oninput="kiraTotal(${i})" id="m_${i}_${j}"></td>`;
         });
 
         rowHtml += `<td class="p-1 border text-center font-bold bg-yellow-50 text-gray-800" id="total_${i}">0</td>`;
