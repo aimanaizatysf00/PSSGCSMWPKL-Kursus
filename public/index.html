@@ -3,10 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Ujian Kenaikan Tali Pinggang</title>
+  <title>Sistem Ujian Kenaikan Tali Pinggang Silat</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes bounceShort {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-bounce-short {
+      animation: bounceShort 0.5s ease-in-out 2;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
+<body class="bg-gray-100 min-h-screen p-4 text-gray-800">
 
   <div class="max-w-4xl mx-auto space-y-4">
     
@@ -17,10 +26,10 @@
         <div id="sessionSummary" class="text-sm font-semibold text-gray-800 mt-0.5"></div>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700">
+        <button type="button" onclick="pulihkanUjian()" class="bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-700 transition">
           ➔ Sambung Ujian
         </button>
-        <button type="button" onclick="padamDrafUjian()" class="bg-gray-200 text-gray-600 px-2 py-1.5 rounded text-xs hover:bg-gray-300">
+        <button type="button" onclick="padamDrafUjian()" class="bg-gray-200 text-gray-600 px-2 py-1.5 rounded text-xs hover:bg-gray-300 transition" title="Padam Draf">
           🗑️
         </button>
       </div>
@@ -34,58 +43,58 @@
       <div id="step-1" class="space-y-4">
         <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
         <div>
-          <label class="block text-sm font-medium">Nama Penguji</label>
-          <input type="text" id="namaPenguji" class="w-full border p-2 rounded mt-1" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
+          <label class="block text-sm font-medium text-gray-700">Nama Penguji</label>
+          <input type="text" id="namaPenguji" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
         </div>
         <div>
-          <label class="block text-sm font-medium">Tali Pinggang / Peringkat</label>
-          <select id="taliPinggang" class="w-full border p-2 rounded mt-1" onchange="simpanDrafUjian()">
+          <label class="block text-sm font-medium text-gray-700">Tali Pinggang / Peringkat</label>
+          <select id="taliPinggang" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" onchange="simpanDrafUjian()">
             <option value="">Memuatkan senarai tali pinggang...</option>
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium">Kumpulan / Sesi</label>
-          <input type="text" id="kumpulan" class="w-full border p-2 rounded mt-1" value="Kumpulan 1" oninput="simpanDrafUjian()">
+          <label class="block text-sm font-medium text-gray-700">Kumpulan / Sesi</label>
+          <input type="text" id="kumpulan" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" value="Kumpulan 1" oninput="simpanDrafUjian()">
         </div>
-        <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
+        <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
       </div>
 
       <!-- LANGKAH 2 -->
       <div id="step-2" class="space-y-4 hidden">
         <h2 class="text-lg font-bold border-b pb-2">Langkah 2: Pilih Pesilat</h2>
-        <input type="text" id="cariPesilat" oninput="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded">
-        <div id="senaraiMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50"></div>
+        <input type="text" id="cariPesilat" oninput="tapisPesilat()" placeholder="Cari nama atau IC..." class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-red-500 focus:outline-none">
+        <div id="senaraiMaster" class="max-h-60 overflow-y-auto border border-gray-200 p-2 rounded space-y-2 bg-gray-50"></div>
         <div class="flex gap-2">
-          <button type="button" onclick="kembaliLangkah(1)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
-          <button type="button" onclick="bukaModal(2)" class="w-1/2 bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700">Seterusnya ➔</button>
+          <button type="button" onclick="kembaliLangkah(1)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold hover:bg-gray-500 transition">⬅ Kembali</button>
+          <button type="button" onclick="bukaModal(2)" class="w-1/2 bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
         </div>
       </div>
 
       <!-- LANGKAH 3 -->
       <div id="step-3" class="space-y-4 hidden">
         <h2 class="text-lg font-bold border-b pb-2">Langkah 3: Borang Pemarkahan</h2>
-        <div class="bg-gray-100 p-3 rounded text-sm grid grid-cols-3 gap-2 font-medium">
-          <div>Penguji: <span id="dispPenguji" class="text-red-600"></span></div>
-          <div>Ujian: <span id="dispTaliPinggang" class="text-red-600"></span></div>
-          <div>Kumpulan: <span id="dispKumpulan" class="text-red-600"></span></div>
+        <div class="bg-gray-100 p-3 rounded text-sm grid grid-cols-1 sm:grid-cols-3 gap-2 font-medium border border-gray-200">
+          <div>Penguji: <span id="dispPenguji" class="text-red-600 font-semibold"></span></div>
+          <div>Ujian: <span id="dispTaliPinggang" class="text-red-600 font-semibold"></span></div>
+          <div>Kumpulan: <span id="dispKumpulan" class="text-red-600 font-semibold"></span></div>
         </div>
 
         <div class="flex justify-end">
-          <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
+          <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1 transition">
             ➕ Tambah Pesilat
           </button>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse border text-sm text-left">
+        <div class="overflow-x-auto border rounded">
+          <table class="w-full border-collapse text-sm text-left">
             <thead id="headJadual" class="bg-gray-200"></thead>
             <tbody id="jadualPemarkahan"></tbody>
           </table>
         </div>
 
         <div class="flex gap-2">
-          <button type="button" onclick="kembaliLangkah(2)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold">⬅ Kembali</button>
-          <button type="button" onclick="bukaModal(3)" class="w-1/2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">💾 Simpan Ke Google Sheet</button>
+          <button type="button" onclick="kembaliLangkah(2)" class="w-1/2 bg-gray-400 text-white py-2 rounded font-semibold hover:bg-gray-500 transition">⬅ Kembali</button>
+          <button type="button" onclick="bukaModal(3)" class="w-1/2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700 transition">💾 Simpan Ke Google Sheet</button>
         </div>
       </div>
     </div>
@@ -97,7 +106,7 @@
       <div class="text-4xl">📢</div>
       <h3 class="text-lg font-bold text-gray-800">PENGUMUMAN URUS SETIA</h3>
       <div id="notifMesej" class="bg-amber-50 p-3 rounded-lg text-sm font-semibold text-amber-900 border border-amber-200"></div>
-      <button type="button" onclick="tutupNotif()" class="w-full py-2 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700 shadow">
+      <button type="button" onclick="tutupNotif()" class="w-full py-2 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700 shadow transition">
         Faham & Tutup
       </button>
     </div>
@@ -105,30 +114,30 @@
 
   <!-- MODAL PENGESAHAN -->
   <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-40">
-    <div class="bg-white rounded-lg p-6 max-w-sm w-full space-y-4 text-center">
-      <h3 class="text-lg font-bold">Pengesahan</h3>
+    <div class="bg-white rounded-lg p-6 max-w-sm w-full space-y-4 text-center shadow-xl">
+      <h3 class="text-lg font-bold text-gray-800">Pengesahan</h3>
       <p id="modalMessage" class="text-gray-600 text-sm"></p>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="tutupModal()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
-        <button type="button" id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold">Ya, Teruskan</button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="tutupModal()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold hover:bg-gray-400 transition">Batal</button>
+        <button type="button" id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700 transition">Ya, Teruskan</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL TAMBAH PESILAT -->
   <div id="tambahPesilatModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-40">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full space-y-4">
-      <h3 class="text-lg font-bold border-b pb-2">Tambah Pesilat Ke Ujian Ini</h3>
-      <input type="text" id="cariTambahPesilat" oninput="tapisPesilatTambah()" placeholder="Cari nama atau IC..." class="w-full border p-2 rounded text-sm">
-      <div id="senaraiTambahMaster" class="max-h-60 overflow-y-auto border p-2 rounded space-y-2 bg-gray-50"></div>
+    <div class="bg-white rounded-lg p-6 max-w-md w-full space-y-4 shadow-xl">
+      <h3 class="text-lg font-bold border-b pb-2 text-gray-800">Tambah Pesilat Ke Ujian Ini</h3>
+      <input type="text" id="cariTambahPesilat" oninput="tapisPesilatTambah()" placeholder="Cari nama atau IC..." class="w-full border border-gray-300 p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+      <div id="senaraiTambahMaster" class="max-h-60 overflow-y-auto border border-gray-200 p-2 rounded space-y-2 bg-gray-50"></div>
       <div class="flex justify-end gap-2 pt-2">
-        <button type="button" onclick="tutupModalTambahPesilat()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold">Batal</button>
+        <button type="button" onclick="tutupModalTambahPesilat()" class="px-4 py-2 bg-gray-300 rounded text-sm font-semibold hover:bg-gray-400 transition">Batal</button>
       </div>
     </div>
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvFkbdUocMQKCQ8yXv85a8GfAtJSDBxSjVCfiHM_MnAQsZ46h4Vhq5_Tgpvp2aRJnF/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWCtZxqPxywo5Ct4D_Vhvn9pZwakuVrsG5Nud1c3L_mmSVeb2lVmDH5jCgj_UnWYThhQ/exec"; 
 
     let currentStep = 1;
     let dataMasterPesilat = [];
@@ -146,8 +155,8 @@
         const res = await fetch(APPS_SCRIPT_URL, { redirect: "follow" });
         const result = await res.json();
         if (result.success) {
-          dataMasterPesilat = result.pesilat;
-          tetapanTaliPinggang = result.tetapan;
+          dataMasterPesilat = result.pesilat || [];
+          tetapanTaliPinggang = result.tetapan || {};
           isiDropdownTaliPinggang();
           paparSenaraiMaster(dataMasterPesilat);
           semakDanPaparBannerSesi();
@@ -176,7 +185,9 @@
             lastNotifId = result.notif.id;
           }
         }
-      } catch(e) { console.log('Gagal semak notif', e); }
+      } catch(e) { 
+        console.log('Gagal semak notif', e); 
+      }
     }
 
     function tutupNotif() {
@@ -192,7 +203,9 @@
         select.innerHTML = `<option value="">Tiada tetapan dijumpai</option>`;
         return;
       }
-      keys.forEach(k => { select.innerHTML += `<option value="${k}">${k}</option>`; });
+      keys.forEach(k => { 
+        select.innerHTML += `<option value="${k}">${k}</option>`; 
+      });
     }
 
     function semakDanPaparBannerSesi() {
@@ -275,6 +288,8 @@
     function padamDrafUjian() {
       if (confirm("Pasti mahu memadam draf sesi ini?")) {
         localStorage.removeItem(DRAFT_KEY);
+        pesilatPilihan = [];
+        paparSenaraiMaster(dataMasterPesilat);
         semakDanPaparBannerSesi();
         tunjukLangkah(1);
       }
@@ -286,7 +301,7 @@
       const btn = document.getElementById('modalConfirmBtn');
 
       if (step === 1) {
-        const penguji = document.getElementById('namaPenguji').value;
+        const penguji = document.getElementById('namaPenguji').value.trim();
         const tp = document.getElementById('taliPinggang').value;
         if (!penguji) return alert('Sila isi nama penguji.');
         if (!tp) return alert('Sila pilih tali pinggang.');
@@ -303,7 +318,9 @@
       modal.classList.remove('hidden');
     }
 
-    function tutupModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+    function tutupModal() { 
+      document.getElementById('confirmModal').classList.add('hidden'); 
+    }
 
     function tunjukLangkah(step) {
       document.getElementById(`step-${currentStep}`).classList.add('hidden');
@@ -312,20 +329,22 @@
       simpanDrafUjian();
     }
 
-    function kembaliLangkah(step) { tunjukLangkah(step); }
+    function kembaliLangkah(step) { 
+      tunjukLangkah(step); 
+    }
 
     function paparSenaraiMaster(list) {
       const box = document.getElementById('senaraiMaster');
-      if(list.length === 0) {
+      if (list.length === 0) {
         box.innerHTML = `<p class="text-center text-gray-500 py-4">Tiada data pesilat.</p>`;
         return;
       }
       box.innerHTML = list.map((p) => {
         const isChecked = pesilatPilihan.some(item => item.ic === p.ic) ? 'checked' : '';
         return `
-          <label class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100 cursor-pointer">
+          <label class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:bg-gray-100 cursor-pointer">
             <div>
-              <div class="font-semibold">${p.nama}</div>
+              <div class="font-semibold text-gray-800">${p.nama}</div>
               <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
             </div>
             <input type="checkbox" ${isChecked} onchange="togglePesilatByIC('${p.ic}', this.checked)" class="w-5 h-5 accent-red-600">
@@ -345,7 +364,7 @@
       if (!item) return;
 
       if (checked) {
-        if(!pesilatPilihan.some(p => p.ic === ic)) pesilatPilihan.push(item);
+        if (!pesilatPilihan.some(p => p.ic === ic)) pesilatPilihan.push(item);
       } else {
         pesilatPilihan = pesilatPilihan.filter(p => p.ic !== ic);
       }
@@ -356,8 +375,13 @@
       const tpSelected = document.getElementById('taliPinggang').value;
       const config = tetapanTaliPinggang[tpSelected];
       
-      activeKriteria = config.kriteria;
-      activeMarkahMaks = config.markahMaks;
+      if (!config) {
+        alert("Konfigurasi untuk tali pinggang ini tidak ditemui.");
+        return;
+      }
+
+      activeKriteria = config.kriteria || [];
+      activeMarkahMaks = config.markahMaks || [];
       const totalMaks = activeMarkahMaks.reduce((a, b) => a + b, 0);
 
       const payload = {
@@ -402,29 +426,29 @@
       document.getElementById('dispKumpulan').innerText = data.kumpulan;
 
       let headHtml = `<tr>
-        <th class="p-2 border">Nama</th>
-        <th class="p-2 border">Gelanggang</th>`;
+        <th class="p-2 border text-gray-700">Nama</th>
+        <th class="p-2 border text-gray-700">Gelanggang</th>`;
       
       activeKriteria.forEach((k, idx) => {
-        headHtml += `<th class="p-2 border text-center">${k}<br><span class="text-xs font-normal text-gray-600">(${activeMarkahMaks[idx]})</span></th>`;
+        headHtml += `<th class="p-2 border text-center text-gray-700">${k}<br><span class="text-xs font-normal text-gray-500">(${activeMarkahMaks[idx]})</span></th>`;
       });
       
-      headHtml += `<th class="p-2 border text-center">Jumlah<br><span class="text-xs font-normal text-gray-600">(${data.totalMaks})</span></th>
-        <th class="p-2 border text-center">Tindakan</th>
+      headHtml += `<th class="p-2 border text-center text-gray-700">Jumlah<br><span class="text-xs font-normal text-gray-500">(${data.totalMaks})</span></th>
+        <th class="p-2 border text-center text-gray-700">Tindakan</th>
       </tr>`;
       
       document.getElementById('headJadual').innerHTML = headHtml;
 
       const tbody = document.getElementById('jadualPemarkahan');
       tbody.innerHTML = data.pesilatPilihan.map((p, i) => {
-        let rowHtml = `<tr class="border-b"><td class="p-2 border font-medium">${p.nama}</td><td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>`;
+        let rowHtml = `<tr class="border-b hover:bg-gray-50"><td class="p-2 border font-medium text-gray-800">${p.nama}</td><td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>`;
         
         activeKriteria.forEach((_, j) => {
-          rowHtml += `<td class="p-1 border"><input type="number" max="${activeMarkahMaks[j]}" value="0" class="w-12 text-center border p-1 rounded" oninput="kiraTotal(${i})" id="m_${i}_${j}"></td>`;
+          rowHtml += `<td class="p-1 border text-center"><input type="number" min="0" max="${activeMarkahMaks[j]}" value="0" class="w-16 text-center border rounded p-1 focus:ring-1 focus:ring-red-500 focus:outline-none" oninput="kiraTotal(${i})" id="m_${i}_${j}"></td>`;
         });
 
-        rowHtml += `<td class="p-1 border text-center font-bold bg-yellow-50" id="total_${i}">0</td>`;
-        rowHtml += `<td class="p-1 border text-center"><button type="button" onclick="buangPesilat(${i})" class="bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded text-xs font-semibold">❌ Buang</button></td></tr>`;
+        rowHtml += `<td class="p-1 border text-center font-bold bg-yellow-50 text-gray-800" id="total_${i}">0</td>`;
+        rowHtml += `<td class="p-1 border text-center"><button type="button" onclick="buangPesilat(${i})" class="bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded text-xs font-semibold transition">❌ Buang</button></td></tr>`;
         return rowHtml;
       }).join('');
     }
@@ -498,12 +522,12 @@
       }
 
       box.innerHTML = filtered.map((p) => `
-        <div class="flex items-center justify-between p-2 bg-white rounded border hover:bg-gray-100">
+        <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:bg-gray-100">
           <div>
-            <div class="font-semibold text-sm">${p.nama}</div>
+            <div class="font-semibold text-sm text-gray-800">${p.nama}</div>
             <div class="text-xs text-gray-500">${p.ic} | ${p.gelanggang}</div>
           </div>
-          <button type="button" onclick="pilihPesilatTambahan('${p.ic}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700">
+          <button type="button" onclick="pilihPesilatTambahan('${p.ic}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700 transition">
             ➕ Pilih
           </button>
         </div>
@@ -523,21 +547,27 @@
     function kiraTotal(idxPesilat) {
       let sum = 0;
       activeKriteria.forEach((_, j) => {
-        sum += Number(document.getElementById(`m_${idxPesilat}_${j}`).value || 0);
+        const el = document.getElementById(`m_${idxPesilat}_${j}`);
+        sum += el ? Number(el.value || 0) : 0;
       });
-      document.getElementById(`total_${idxPesilat}`).innerText = sum;
+      const totalEl = document.getElementById(`total_${idxPesilat}`);
+      if (totalEl) totalEl.innerText = sum;
       simpanDrafUjian();
     }
 
     async function simpanMarkahAkhir() {
       let dataMarkah = pesilatPilihan.map((p, i) => {
-        let mArray = activeKriteria.map((_, j) => Number(document.getElementById(`m_${i}_${j}`).value || 0));
+        let mArray = activeKriteria.map((_, j) => {
+          const el = document.getElementById(`m_${i}_${j}`);
+          return el ? Number(el.value || 0) : 0;
+        });
+        const totalEl = document.getElementById(`total_${i}`);
         return {
           nama: p.nama,
           ic: p.ic,
           gelanggang: p.gelanggang,
           markahArray: mArray,
-          jumlah: Number(document.getElementById(`total_${i}`).innerText || 0)
+          jumlah: totalEl ? Number(totalEl.innerText || 0) : 0
         };
       });
 
