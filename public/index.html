@@ -53,7 +53,7 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Kumpulan / Sesi</label>
+          <label class="block text-sm font-medium text-gray-700">Kumpulan / Gelanggang</label>
           <input type="text" id="kumpulan" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" value="Kumpulan 1" oninput="simpanDrafUjian()">
         </div>
         <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
@@ -100,7 +100,7 @@
     </div>
   </div>
 
-  <!-- POP-UP NOTIFIKASI / PENGUMUMAN URUS SETIA -->
+  <!-- POP-UP NOTIFIKASI URUS SETIA -->
   <div id="notifModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center p-4 z-50 animate-bounce-short">
     <div class="bg-white rounded-xl p-6 max-w-sm w-full space-y-4 text-center border-4 border-amber-500 shadow-2xl">
       <div class="text-4xl">📢</div>
@@ -150,6 +150,47 @@
 
     const DRAFT_KEY = "SILAT_EXAM_DRAFT_V1";
 
+    // JANA / AMBIL ID UNIK TELEFON
+    function getDeviceId() {
+      let devId = localStorage.getItem("SILAT_DEVICE_ID");
+      if (!devId) {
+        devId = "DEV_" + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem("SILAT_DEVICE_ID", devId);
+      }
+      return devId;
+    }
+
+    // FUNGSI HANTAR LOG AKTIVITI KE BACKEND
+    async function hantarLogAktiviti(peringkatPesan) {
+      try {
+        const payload = {
+          action: 'updateDeviceLog',
+          deviceId: getDeviceId(),
+          namaPenguji: document.getElementById('namaPenguji')?.value || 'Belum Key-in',
+          gelanggang: document.getElementById('kumpulan')?.value || '-',
+          peringkat: peringkatPesan || `Langkah ${currentStep}`,
+          pesilat: pesilatPilihan.length > 0 ? pesilatPilihan.map(p => p.nama).join(', ') : '-'
+        };
+
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await res.json();
+
+        // Arahan Reset dari Admin
+        if (result.success && result.forceReset) {
+          alert("⚠️ Admin telah mereset sesi peranti anda.");
+          padamDrafUjian();
+          location.reload();
+        }
+      } catch (e) {
+        console.log("Log gagal hantar:", e);
+      }
+    }
+
     window.onload = async function() {
       try {
         const res = await fetch(APPS_SCRIPT_URL, { redirect: "follow" });
@@ -161,9 +202,14 @@
           paparSenaraiMaster(dataMasterPesilat);
           semakDanPaparBannerSesi();
 
-          // Mulakan semakan pengumuman setiap 8 saat
+          hantarLogAktiviti("Buka Aplikasi");
+
+          // Semakan notifikasi dan ping log peranti
           semakPengumuman();
-          setInterval(semakPengumuman, 8000);
+          setInterval(() => {
+            semakPengumuman();
+            hantarLogAktiviti();
+          }, 8000);
         } else {
           alert('Gagal muat tetapan: ' + result.message);
         }
@@ -178,9 +224,8 @@
         const res = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
         const result = await res.json();
         if (result.success && result.notif) {
-          // Hanya paparkan jika ada notifikasi baharu (ID berbeza)
           if (result.notif.id !== lastNotifId) {
-            document.getElementById('notifMesej').innerText = result.notif.mesej;
+            document.getElementById('notifMesej').innerText = result.notif.message || result.notif.mesej;
             document.getElementById('notifModal').classList.remove('hidden');
             lastNotifId = result.notif.id;
           }
@@ -286,13 +331,11 @@
     }
 
     function padamDrafUjian() {
-      if (confirm("Pasti mahu memadam draf sesi ini?")) {
-        localStorage.removeItem(DRAFT_KEY);
-        pesilatPilihan = [];
-        paparSenaraiMaster(dataMasterPesilat);
-        semakDanPaparBannerSesi();
-        tunjukLangkah(1);
-      }
+      localStorage.removeItem(DRAFT_KEY);
+      pesilatPilihan = [];
+      paparSenaraiMaster(dataMasterPesilat);
+      semakDanPaparBannerSesi();
+      tunjukLangkah(1);
     }
 
     function bukaModal(step) {
@@ -327,6 +370,7 @@
       document.getElementById(`step-${step}`).classList.remove('hidden');
       currentStep = step;
       simpanDrafUjian();
+      hantarLogAktiviti(`Berada di Langkah ${step}`);
     }
 
     function kembaliLangkah(step) { 
@@ -385,6 +429,7 @@
       const totalMaks = activeMarkahMaks.reduce((a, b) => a + b, 0);
 
       const payload = {
+        action: 'createSheet',
         penguji: document.getElementById('namaPenguji').value,
         taliPinggang: tpSelected,
         kumpulan: document.getElementById('kumpulan').value,
@@ -416,7 +461,7 @@
         }
       } catch (err) {
         document.body.style.cursor = 'default';
-        alert('Ralat semasa menghantar data.');
+        alert('Ralat semasa menghantar data ke Google Sheet.');
       }
     }
 
@@ -593,6 +638,7 @@
         if (result.success) {
           alert('✅ ' + result.message);
           simpanDrafUjian(); 
+          hantarLogAktiviti("Selesai Hantar Markah Ujian");
         } else {
           alert('❌ Gagal: ' + result.message);
         }
