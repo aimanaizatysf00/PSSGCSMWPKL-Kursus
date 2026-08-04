@@ -186,7 +186,7 @@
   </footer>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwquC3uF8GMnPH7du0Ksh7rctWrIVhYRLrB3aHhkivdHB3GD-CWIEM-Ye8tMjUriOshmQ/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0jkG615hoVfbaV5AQRc7Lj89FwpfOaIxKc9lZJkUUKa7gwKpVad2hwai2vZkDzed0tA/exec";
 
     let DB_PESILAT = [];
     let DB_TETAPAN = {};
@@ -455,13 +455,10 @@
     }
 
     function toggleStarPesilat(pIdx) {
-      // HADKAN: Hanya 1 pesilat terbaik sahaja dibenarkan dalam satu sesi
       const isCurrentlyStarred = PESILAT_TERPILIH[pIdx].starred;
       
       if (!isCurrentlyStarred) {
-        // Buang star daripada semua pesilat lain dalam sesi ini terlebih dahulu
         PESILAT_TERPILIH.forEach(p => p.starred = false);
-        // Tandakan pesilat ini sebagai star
         PESILAT_TERPILIH[pIdx].starred = true;
       } else {
         PESILAT_TERPILIH[pIdx].starred = false;
@@ -491,7 +488,7 @@
       });
 
       simpanSesiTempatan();
-      hantarLogPenguji(); // Hantar kemas kini star ke server serta-merta
+      hantarLogPenguji();
     }
 
     function gerakPesilatLangkah3(index, arah) {
@@ -654,7 +651,7 @@
 
         if (data.success) {
           alert("🔄 Markah berjaya dikemas kini.");
-          hantarLogPenguji(); // Segerakkan log peranti serta star/jumlah terkini
+          hantarLogPenguji();
         } else {
           alert("Gagal simpan: " + data.message);
         }
