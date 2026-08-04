@@ -186,7 +186,7 @@
   </footer>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxakV95da1mrOAxFHBRewLy5ZPgV0QZeNmG3KjP8_TTkHBqYWtGk6p_r78lQQzJlKbNg/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysOxQE845mpraY0ynWwboVG3qPLUXFqlaYUhVJ6_LMQxD_xUk467NB7eukGIJfUENqEw/exec";
 
     let DB_PESILAT = [];
     let DB_TETAPAN = {};
@@ -455,7 +455,18 @@
     }
 
     function toggleStarPesilat(pIdx) {
-      PESILAT_TERPILIH[pIdx].starred = !PESILAT_TERPILIH[pIdx].starred;
+      // HADKAN: Hanya 1 pesilat terbaik sahaja dibenarkan dalam satu sesi
+      const isCurrentlyStarred = PESILAT_TERPILIH[pIdx].starred;
+      
+      if (!isCurrentlyStarred) {
+        // Buang star daripada semua pesilat lain dalam sesi ini terlebih dahulu
+        PESILAT_TERPILIH.forEach(p => p.starred = false);
+        // Tandakan pesilat ini sebagai star
+        PESILAT_TERPILIH[pIdx].starred = true;
+      } else {
+        PESILAT_TERPILIH[pIdx].starred = false;
+      }
+
       const tp = document.getElementById('pilihTaliPinggang').value;
       const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
       
@@ -814,6 +825,7 @@
     async function hantarLogPenguji() {
       const penguji = document.getElementById('namaPenguji')?.value || '-';
       const tp = document.getElementById('pilihTaliPinggang')?.value || '-';
+      const kump = document.getElementById('kumpulanUjian')?.value || 'Kumpulan Utama';
 
       const pesilatPayload = PESILAT_TERPILIH.map((p, pIdx) => {
         const jumlahEl = document.getElementById(`jumlahMarkah_${pIdx}`);
@@ -832,6 +844,7 @@
         deviceId: DEVICE_ID,
         namaPenguji: penguji,
         peringkat: tp,
+        kumpulan: kump,
         pesilat: pesilatPayload
       };
 
