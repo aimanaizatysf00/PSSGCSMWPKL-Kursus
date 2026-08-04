@@ -78,14 +78,13 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQ4aFiv7IV6_qu7pNovlPtBGHSLK7NvG2lVqxYTSsXEEsSe5g7Qshc1nar5iURcCXghw/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIxZVScUlxgHgBNODz5HXrRDtwGZXLjr5UMFYjQi5AMMxrxPuKefx66t5wcmO41NP78Q/exec"; 
 
     window.onload = function() {
       muatLogAdmin();
       setInterval(muatLogAdmin, 5000);
     };
 
-    // TARIK LOG AKTIVITI TELEFON DARI GOOGLE APPS SCRIPT
     async function muatLogAdmin() {
       try {
         const res = await fetch(APPS_SCRIPT_URL + "?action=getAdminLogs");
@@ -100,7 +99,6 @@
       }
     }
 
-    // FUNGSI BANTUAN MENERJEMAH FORMAT PESILAT DARI LOG
     function rawatSenaraiPesilat(pesilatData) {
       let listPesilat = [];
       if (pesilatData) {
@@ -124,7 +122,6 @@
       return listPesilat;
     }
 
-    // FUNGSI MEMAPARKAN KOTAK PESILAT TERBAIK
     function paparPesilatTerbaik(logsObj) {
       const container = document.getElementById('senaraiPesilatTerbaikContainer');
       const keys = Object.keys(logsObj);
@@ -136,8 +133,7 @@
         let listPesilat = rawatSenaraiPesilat(item.pesilat);
 
         listPesilat.forEach(p => {
-          // Menyokong pelbagai bentuk penandaan star (boolean atau string 'true' / 1)
-          if (p && typeof p === 'object' && (p.starred === true || p.starred === 'true' || p.starred === 1)) {
+          if (p && typeof p === 'object' && (p.starred === true || p.starred === 'true' || p.starred == 1)) {
             adaPesilatStar = true;
             const namaPenguji = item.penguji || 'Tanpa Nama';
             const peringkat = item.peringkat || '-';
@@ -187,7 +183,7 @@
         let listPesilatObj = rawatSenaraiPesilat(item.pesilat);
         let listNama = listPesilatObj.map(p => {
           if (typeof p === 'object' && p !== null) {
-            const isStarred = p.starred === true || p.starred === 'true' || p.starred === 1;
+            const isStarred = p.starred === true || p.starred === 'true' || p.starred == 1;
             return (p.nama || '-') + (isStarred ? ' ⭐' : '');
           }
           return String(p);
