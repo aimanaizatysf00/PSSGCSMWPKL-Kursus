@@ -283,6 +283,9 @@
             <td class="p-3 border text-xs text-gray-500 align-top">${item.lastUpdate || '-'}</td>
             <td class="p-3 border text-center align-top">
               <div class="flex items-center justify-center gap-1.5">
+                <button onclick="tukarPengujiSesi('${devId}', '${item.penguji || ''}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Tukar Nama Penguji Sesi Ini">
+                  Tukar Penguji
+                </button>
                 <button onclick="resetSesiPeranti('${devId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
                   Reset
                 </button>
@@ -294,6 +297,36 @@
           </tr>
         `;
       }).join('');
+    }
+
+    async function tukarPengujiSesi(devId, pengujiSemasa) {
+      const pengujiBaru = prompt(`Masukkan nama penguji pengganti untuk peranti [${devId}]:`, pengujiSemasa);
+      if (pengujiBaru === null) return; // Tekan cancel
+      const trimmedNama = pengujiBaru.trim();
+      if (!trimmedNama) {
+        alert("Nama penguji tidak boleh kosong.");
+        return;
+      }
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ 
+            action: 'updatePenguji', 
+            deviceId: devId, 
+            pengujiBaru: trimmedNama 
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Nama penguji berjaya dikemas kini.");
+          muatLogAdmin();
+        } else {
+          alert("Gagal: " + (result.message || "Gagal mengemas kini nama penguji."));
+        }
+      } catch(e) {
+        alert("Ralat semasa mengemas kini penguji.");
+      }
     }
 
     async function hantarNotif() {
