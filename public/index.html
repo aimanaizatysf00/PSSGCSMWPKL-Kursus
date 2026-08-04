@@ -322,7 +322,8 @@
       PESILAT_TERPILIH = Array.from(chks).map(c => ({
         ic: c.value,
         nama: c.getAttribute('data-nama'),
-        gelanggang: c.getAttribute('data-gelanggang')
+        gelanggang: c.getAttribute('data-gelanggang'),
+        starred: false
       }));
 
       const penguji = document.getElementById('namaPenguji').value.trim();
@@ -383,12 +384,17 @@
         }
       });
 
-      container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
-        <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 w-full" data-ic="${p.ic}" data-pidx="${pIdx}">
+      container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => {
+        const isStarred = p.starred || false;
+        return `
+        <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 w-full ${isStarred ? 'ring-2 ring-amber-400 bg-amber-50/40' : ''}" data-ic="${p.ic}" data-pidx="${pIdx}">
           
           <div class="w-52 flex-shrink-0 border-r border-slate-200 pr-3 flex items-center justify-between text-xs">
             <div class="space-y-1 pr-1 truncate">
               <div class="flex items-center gap-1">
+                <button type="button" onclick="toggleStarPesilat(${pIdx})" class="text-base focus:outline-none transition transform hover:scale-110" title="${isStarred ? 'Buang Star' : 'Star Pesilat Cemerlang'}">
+                  ${isStarred ? '⭐' : '☆'}
+                </button>
                 <span class="font-black text-amber-600">#${pIdx + 1}</span>
                 <div class="font-bold text-gray-900 leading-tight truncate" title="${p.nama}">${p.nama}</div>
               </div>
@@ -434,7 +440,8 @@
           </div>
 
         </div>
-      `).join('');
+      `;
+      }).join('');
 
       PESILAT_TERPILIH.forEach((p, pIdx) => {
         if (markahSimpanan[p.ic]) {
@@ -445,6 +452,34 @@
           kiraJumlahPesilat(pIdx);
         }
       });
+    }
+
+    function toggleStarPesilat(pIdx) {
+      PESILAT_TERPILIH[pIdx].starred = !PESILAT_TERPILIH[pIdx].starred;
+      const tp = document.getElementById('pilihTaliPinggang').value;
+      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
+      
+      const markahSimpanan = {};
+      PESILAT_TERPILIH.forEach((p, idx) => {
+        const inputs = document.querySelectorAll(`.inputMarkah_${idx}`);
+        if (inputs.length > 0) {
+          markahSimpanan[p.ic] = Array.from(inputs).map(i => i.value);
+        }
+      });
+
+      binaBorangMarkah(kriteriaObj);
+
+      PESILAT_TERPILIH.forEach((p, idx) => {
+        if (markahSimpanan[p.ic]) {
+          const inputs = document.querySelectorAll(`.inputMarkah_${idx}`);
+          inputs.forEach((inp, i) => {
+            if (markahSimpanan[p.ic][i] !== undefined) inp.value = markahSimpanan[p.ic][i];
+          });
+          kiraJumlahPesilat(idx);
+        }
+      });
+
+      simpanSesiTempatan();
     }
 
     function gerakPesilatLangkah3(index, arah) {
@@ -458,7 +493,26 @@
       const tp = document.getElementById('pilihTaliPinggang').value;
       const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
 
+      const markahSimpanan = {};
+      PESILAT_TERPILIH.forEach((p, idx) => {
+        const inputs = document.querySelectorAll(`.inputMarkah_${idx}`);
+        if (inputs.length > 0) {
+          markahSimpanan[p.ic] = Array.from(inputs).map(i => i.value);
+        }
+      });
+
       binaBorangMarkah(kriteriaObj);
+
+      PESILAT_TERPILIH.forEach((p, idx) => {
+        if (markahSimpanan[p.ic]) {
+          const inputs = document.querySelectorAll(`.inputMarkah_${idx}`);
+          inputs.forEach((inp, i) => {
+            if (markahSimpanan[p.ic][i] !== undefined) inp.value = markahSimpanan[p.ic][i];
+          });
+          kiraJumlahPesilat(idx);
+        }
+      });
+
       simpanSesiTempatan();
     }
 
@@ -486,16 +540,14 @@
       if (elem) {
         elem.innerText = total;
         
-        // Buang semua kelas warna sebelum ini
         elem.classList.remove('text-amber-600', 'text-red-600', 'text-emerald-600');
         
-        // Syarat warna mengikut jumlah markah
         if (total <= 49) {
-          elem.classList.add('text-red-600'); // 49 ke bawah: Merah
+          elem.classList.add('text-red-600');
         } else if (total >= 50 && total <= 79) {
-          elem.classList.add('text-emerald-600'); // 50 - 79: Hijau
+          elem.classList.add('text-emerald-600');
         } else if (total >= 80) {
-          elem.classList.add('text-amber-600'); // 80 - 100: Emas/Kuning
+          elem.classList.add('text-amber-600');
         }
       }
       
@@ -526,6 +578,7 @@
           nama: p.nama,
           ic: p.ic,
           gelanggang: p.gelanggang,
+          starred: p.starred || false,
           markahArray: markahArr,
           jumlah: markahArr.reduce((a, b) => a + b, 0)
         };
@@ -565,6 +618,7 @@
           nama: p.nama,
           ic: p.ic,
           gelanggang: p.gelanggang,
+          starred: p.starred || false,
           markahArray: markahArr,
           jumlah: markahArr.reduce((a, b) => a + b, 0)
         };
@@ -646,7 +700,7 @@
     function togglePilihPesilatModal(ic, nama, gelanggang, isChecked) {
       if (isChecked) {
         if (!PESILAT_TERPILIH.some(p => p.ic === ic)) {
-          PESILAT_TERPILIH.push({ ic, nama, gelanggang });
+          PESILAT_TERPILIH.push({ ic, nama, gelanggang, starred: false });
         }
       } else {
         PESILAT_TERPILIH = PESILAT_TERPILIH.filter(p => p.ic !== ic);
@@ -777,7 +831,6 @@
         });
         const data = await res.json();
         
-        // Semak jika admin menekan butang reset atau padam log
         if (data.forceReset || data.status === 'RESET_REQUESTED') {
           localStorage.removeItem('SILAT_DRAFT_SESSION');
           DRAF_TERSIMPAM_DATA = null;
@@ -824,3 +877,4 @@
   </script>
 </body>
 </html>
+```[cite: 1]
