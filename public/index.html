@@ -186,7 +186,7 @@
   </footer>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIxZVScUlxgHgBNODz5HXrRDtwGZXLjr5UMFYjQi5AMMxrxPuKefx66t5wcmO41NP78Q/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxakV95da1mrOAxFHBRewLy5ZPgV0QZeNmG3KjP8_TTkHBqYWtGk6p_r78lQQzJlKbNg/exec";
 
     let DB_PESILAT = [];
     let DB_TETAPAN = {};
@@ -480,6 +480,7 @@
       });
 
       simpanSesiTempatan();
+      hantarLogPenguji(); // Hantar kemas kini star ke server serta-merta
     }
 
     function gerakPesilatLangkah3(index, arah) {
@@ -642,6 +643,7 @@
 
         if (data.success) {
           alert("🔄 Markah berjaya dikemas kini.");
+          hantarLogPenguji(); // Segerakkan log peranti serta star/jumlah terkini
         } else {
           alert("Gagal simpan: " + data.message);
         }
@@ -813,12 +815,24 @@
       const penguji = document.getElementById('namaPenguji')?.value || '-';
       const tp = document.getElementById('pilihTaliPinggang')?.value || '-';
 
+      const pesilatPayload = PESILAT_TERPILIH.map((p, pIdx) => {
+        const jumlahEl = document.getElementById(`jumlahMarkah_${pIdx}`);
+        const currentJumlah = jumlahEl ? Number(jumlahEl.innerText) || 0 : (p.jumlah || 0);
+        return {
+          nama: p.nama,
+          ic: p.ic,
+          gelanggang: p.gelanggang,
+          starred: p.starred || false,
+          jumlah: currentJumlah
+        };
+      });
+
       const payload = {
         action: 'updateDeviceLog',
         deviceId: DEVICE_ID,
         namaPenguji: penguji,
         peringkat: tp,
-        pesilat: PESILAT_TERPILIH
+        pesilat: pesilatPayload
       };
 
       try {
