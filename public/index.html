@@ -186,7 +186,7 @@
   </footer>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0jkG615hoVfbaV5AQRc7Lj89FwpfOaIxKc9lZJkUUKa7gwKpVad2hwai2vZkDzed0tA/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwq4fmTa0c87A6A0IYnPbc7uYS1_1xprZN2Ytw-gL4aRXCrVsSmbvRBl4jigjSilYIJjg/exec";
 
     let DB_PESILAT = [];
     let DB_TETAPAN = {};
@@ -820,9 +820,9 @@
     }
 
     async function hantarLogPenguji() {
-      const penguji = document.getElementById('namaPenguji')?.value || '-';
-      const tp = document.getElementById('pilihTaliPinggang')?.value || '-';
-      const kump = document.getElementById('kumpulanUjian')?.value || 'Kumpulan Utama';
+      const penguji = document.getElementById('namaPenguji')?.value || '';
+      const tp = document.getElementById('pilihTaliPinggang')?.value || '';
+      const kump = document.getElementById('kumpulanUjian')?.value || '';
 
       const pesilatPayload = PESILAT_TERPILIH.map((p, pIdx) => {
         const jumlahEl = document.getElementById(`jumlahMarkah_${pIdx}`);
@@ -865,6 +865,25 @@
           PESILAT_TERPILIH = [];
           CURRENT_SHEET_TITLE = "";
           tunjukLangkah(1, false);
+        }
+
+        // Semak jika pelayan menghantar draf sesi pindahan peranti (tiada nama penguji lagi tapi ada pesilat)
+        if (data.draftData && (!penguji || penguji === '') && data.draftData.pesilat && data.draftData.pesilat.length > 0) {
+          const draftPindahan = {
+            langkah: 3,
+            penguji: '',
+            tp: data.draftData.peringkat,
+            kump: data.draftData.kumpulan,
+            pesilat: data.draftData.pesilat,
+            sheetTitle: data.draftData.sheetTitle || 'Sesi_Pindahan'
+          };
+          
+          DRAF_TERSIMPAM_DATA = draftPindahan;
+          document.getElementById('infoDrafSesi').innerHTML = `
+            <span><b>Sesi Dipindahkan!</b> Tali Pinggang: ${draftPindahan.tp || '-'}</span> | 
+            <span><b>Bil. Pesilat:</b> ${draftPindahan.pesilat.length} orang</span>
+          `;
+          document.getElementById('bannerDrafSesi').classList.remove('hidden');
         }
       } catch (e) {}
     }
