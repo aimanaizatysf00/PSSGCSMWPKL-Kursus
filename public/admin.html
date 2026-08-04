@@ -150,7 +150,6 @@
               };
             }
             
-            // Masukkan ke dalam kumpulan (hanya simpan pesilat unik jika perlu, atau paparkan)
             groupedData[peringkat][kumpulan].pesilatList.push({
               nama: p.nama || '-',
               ic: p.ic || '-',
@@ -166,9 +165,25 @@
         return;
       }
 
+      // Susunan urutan tali pinggang yang ditetapkan
+      const urutanPeringkat = [
+        "Pra Awan Putih",
+        "Awan Putih Cula 1",
+        "Awan Putih Cula 2",
+        "Pelangi Hijau Cula 3",
+        "Pelangi Hijau Cula 4"
+      ];
+
+      // Dapatkan senarai kunci peringkat yang wujud, susun ikut urutan, dan masukkan yang lain di belakang
+      const senaraiPeringkatWujud = Object.keys(groupedData);
+      const sortedPeringkat = [
+        ...urutanPeringkat.filter(p => senaraiPeringkatWujud.includes(p)),
+        ...senaraiPeringkatWujud.filter(p => !urutanPeringkat.includes(p))
+      ];
+
       let htmlContent = "";
 
-      Object.keys(groupedData).forEach(peringkat => {
+      sortedPeringkat.forEach(peringkat => {
         htmlContent += `
           <div class="space-y-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
             <h3 class="text-md font-extrabold text-amber-800 uppercase tracking-wide border-b border-amber-200 pb-2">
@@ -180,11 +195,14 @@
         Object.keys(groupedData[peringkat]).forEach(kump => {
           const kumpData = groupedData[peringkat][kump];
           
+          // Paparan tajuk kumpulan mengikut format "Kumpulan X (Nama Penguji)"
+          let namaKumpulanLabel = kump.toLowerCase().includes('kumpulan') ? kump : `Kumpulan ${kump}`;
+
           htmlContent += `
             <div class="bg-white border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-3 relative">
               <div class="absolute top-3 right-3 text-xl">⭐</div>
               <div class="font-bold text-slate-800 text-sm">
-                ${kump} <span class="text-xs font-normal text-gray-500">(${kumpData.penguji})</span>
+                ${namaKumpulanLabel} (${kumpData.penguji})
               </div>
               <div class="space-y-3 border-t border-amber-100 pt-2">
           `;
