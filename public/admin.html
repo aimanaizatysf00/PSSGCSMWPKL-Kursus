@@ -16,7 +16,7 @@
         <h1 class="text-2xl font-bold">DASHBOARD URUS SETIA</h1>
         <p class="text-xs text-slate-300">Pemantauan Aktiviti Penguji & Kawalan Sesi Ujian</p>
       </div>
-      <button onclick="muatLogAdmin()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold border border-slate-500 flex items-center gap-1">
+      <button onclick="muatLogAdmin()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold border border-slate-500 flex items-center gap-1 transition">
         🔄 Refresh Data
       </button>
     </div>
@@ -28,7 +28,7 @@
       </h2>
       <div class="flex gap-2">
         <input type="text" id="mesejNotif" placeholder="Tulis mesej pengumuman di sini..." class="w-full border p-2 rounded focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm">
-        <button onclick="hantarNotif()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded text-sm transition">
+        <button onclick="hantarNotif()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded text-sm transition whitespace-nowrap">
           Hantar
         </button>
       </div>
@@ -65,11 +65,11 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwy_Qkd0fyt4xpnzhk6ulabR-Qf-DaL4DVIKLWGUPv4_HYuUpyI8JoPNBoWEaokTqehRg/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlM2RWDgVaq2VAOpiDjrtg0P7u46DlgOHtloHylL38gYIrkqJU2ccXZEeJq3dPVOKQzQ/exec"; 
 
     window.onload = function() {
       muatLogAdmin();
-      setInterval(muatLogAdmin, 5000); // Auto-refresh setiap 5 saat
+      setInterval(muatLogAdmin, 5000);
     };
 
     // TARIK LOG AKTIVITI TELEFON DARI GOOGLE APPS SCRIPT
@@ -99,7 +99,7 @@
         const item = logsObj[devId];
         const isReset = item.status === 'RESET_REQUESTED';
 
-        // 1. RAWATAN & PENGELUARAN SENARAI PESILAT (PETA DATA FLEKSIBEL)
+        // 1. RAWATAN & PENGELUARAN SENARAI PESILAT
         let listPesilat = [];
 
         if (item.pesilat) {
@@ -109,7 +109,6 @@
               return String(p);
             });
           } else if (typeof item.pesilat === 'string' && item.pesilat.trim() !== '-' && item.pesilat.trim() !== '') {
-            // Semak jika string mengandungi format JSON
             if (item.pesilat.startsWith('[') || item.pesilat.startsWith('{')) {
               try {
                 const parsed = JSON.parse(item.pesilat);
@@ -129,7 +128,6 @@
           }
         }
 
-        // Tapis nama kosong, null, atau tanda sempang
         listPesilat = listPesilat.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
 
         // 2. PAPARAN HTML SENARAI PESILAT
@@ -173,7 +171,6 @@
       }).join('');
     }
 
-    // HANTAR NOTIFIKASI POP-UP AUTOMATIK DENGAN ID UNIK (TIMESTAMP)
     async function hantarNotif() {
       const mesej = document.getElementById('mesejNotif').value.trim();
       if (!mesej) return alert("Sila masukkan mesej.");
@@ -183,7 +180,6 @@
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ 
             action: 'sendNotif', 
             message: mesej,
@@ -200,14 +196,12 @@
       }
     }
 
-    // PAKSA RESET SESI PERANTI PENGUJI
     async function resetSesiPeranti(devId) {
       if (!confirm(`Pasti mahu mereset sesi peranti [${devId}]? Penguji akan dikembalikan ke Skrin Utama.`)) return;
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'resetDevice', deviceId: devId, resetType: 'session' })
         });
         const result = await res.json();
@@ -220,14 +214,12 @@
       }
     }
 
-    // PADAM LOG PERANTI DARI SISTEM
     async function padamLogPeranti(devId) {
       if (!confirm(`Adakah anda pasti mahu memadam log peranti [${devId}]?`)) return;
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'deleteDeviceLog', deviceId: devId })
         });
         const result = await res.json();
