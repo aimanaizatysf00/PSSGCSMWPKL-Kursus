@@ -337,41 +337,49 @@
   }
 
   function tapisPesilat() {
-    const selectElem = document.getElementById('pilihanTaliPinggang');
-    const tpDipilih = selectElem.value.trim().toLowerCase();
-    const container = document.getElementById('senaraiPesilatContainer');
+  const selectElem = document.getElementById('pilihanTaliPinggang');
+  // Normalisasikan pilihan dropdown: buang ruang berlebihan & tukar ke lowercase
+  const tpDipilih = selectElem.value.trim().replace(/\s+/g, ' ').toLowerCase();
+  const container = document.getElementById('senaraiPesilatContainer');
 
-    container.innerHTML = '';
+  container.innerHTML = '';
 
-    if (!tpDipilih) {
-      container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
-      return;
-    }
-
-    // PENAMBAHBAIKAN: Menyemak berbilang kemungkinan kunci (peringkat/taliPinggang/kategori)
-    const pesilatTersaring = dbPesilat.filter(p => {
-      const tpDiuji = String(p.peringkat || p.taliPinggang || p.kategori || '').trim().toLowerCase();
-      return tpDiuji === tpDipilih || tpDiuji.includes(tpDipilih) || tpDipilih.includes(tpDiuji);
-    });
-
-    if (pesilatTersaring.length === 0) {
-      container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">
-        Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"<br>
-        <span class="text-xs font-normal text-slate-500">(Pastikan tajuk lajur/peringkat di Google Sheets sepadan)</span>
-      </p>`;
-      return;
-    }
-
-    container.innerHTML = pesilatTersaring.map((p) => `
-      <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
-        <input type="checkbox" name="chkPesilat" value="${p.ic}" onchange="simpanStateLokal()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
-        <div class="overflow-hidden">
-          <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
-          <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang || '-'}</span></p>
-        </div>
-      </label>
-    `).join('');
+  if (!tpDipilih) {
+    container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
+    return;
   }
+
+  // Tapis data pesilat dengan pembersihan yang sepadan dengan Apps Script
+  const pesilatTersaring = dbPesilat.filter(p => {
+    // Ambil data peringkat/tali pinggang diuji daripada JSON Apps Script
+    const tpPesilat = String(p.peringkat || p.taliPinggangTerkini || '')
+                        .trim()
+                        .replace(/\s+/g, ' ')
+                        .toLowerCase();
+    
+    // Perbandingan anjal (Flexible Matching)
+    return tpPesilat === tpDipilih || tpPesilat.includes(tpDipilih) || tpDipilih.includes(tpPesilat);
+  });
+
+  if (pesilatTersaring.length === 0) {
+    container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">
+      Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"<br>
+      <span class="text-xs font-normal text-slate-500">(Sila semak semula ejaan di tab 'DataPesilat' Lajur E & tab 'Tetapan')</span>
+    </p>`;
+    return;
+  }
+
+  // Paparkan senarai pesilat
+  container.innerHTML = pesilatTersaring.map((p) => `
+    <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
+      <input type="checkbox" name="chkPesilat" value="${p.ic}" onchange="simpanStateLokal()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
+      <div class="overflow-hidden">
+        <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
+        <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang || '-'}</span></p>
+      </div>
+    </label>
+  `).join('');
+}
 
   function tandaSemua(status) {
     const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
