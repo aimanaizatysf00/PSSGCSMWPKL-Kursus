@@ -165,7 +165,6 @@
         return;
       }
 
-      // Susunan urutan tali pinggang yang ditetapkan
       const urutanPeringkat = [
         "Pra Awan Putih",
         "Awan Putih Cula 1",
@@ -174,7 +173,6 @@
         "Pelangi Hijau Cula 4"
       ];
 
-      // Dapatkan senarai kunci peringkat yang wujud, susun ikut urutan, dan masukkan yang lain di belakang
       const senaraiPeringkatWujud = Object.keys(groupedData);
       const sortedPeringkat = [
         ...urutanPeringkat.filter(p => senaraiPeringkatWujud.includes(p)),
@@ -195,7 +193,6 @@
         Object.keys(groupedData[peringkat]).forEach(kump => {
           const kumpData = groupedData[peringkat][kump];
           
-          // Paparan tajuk kumpulan mengikut format "Kumpulan X (Nama Penguji)"
           let namaKumpulanLabel = kump.toLowerCase().includes('kumpulan') ? kump : `Kumpulan ${kump}`;
 
           htmlContent += `
@@ -282,16 +279,18 @@
             <td class="p-3 border align-top max-w-xs">${htmlPesilat}</td>
             <td class="p-3 border text-xs text-gray-500 align-top">${item.lastUpdate || '-'}</td>
             <td class="p-3 border text-center align-top">
-              <div class="flex items-center justify-center gap-1.5">
-                <button onclick="tukarPengujiSesi('${devId}', '${item.penguji || ''}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Tukar Nama Penguji Sesi Ini">
-                  Tukar Penguji
+              <div class="flex flex-col gap-1.5 items-center justify-center">
+                <button onclick="pindahSesiPeranti('${devId}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full" title="Pindah Sesi Ke Peranti Lain">
+                  🔄 Pindah Peranti
                 </button>
-                <button onclick="resetSesiPeranti('${devId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
-                  Reset
-                </button>
-                <button onclick="padamLogPeranti('${devId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Padam Log Peranti Ini">
-                  🗑️ Padam
-                </button>
+                <div class="flex items-center gap-1 w-full">
+                  <button onclick="resetSesiPeranti('${devId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition flex-1" title="Reset Sesi Peranti">
+                    Reset
+                  </button>
+                  <button onclick="padamLogPeranti('${devId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition flex-1" title="Padam Log Peranti Ini">
+                    🗑️ Padam
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -299,33 +298,37 @@
       }).join('');
     }
 
-    async function tukarPengujiSesi(devId, pengujiSemasa) {
-      const pengujiBaru = prompt(`Masukkan nama penguji pengganti untuk peranti [${devId}]:`, pengujiSemasa);
-      if (pengujiBaru === null) return; // Tekan cancel
-      const trimmedNama = pengujiBaru.trim();
-      if (!trimmedNama) {
-        alert("Nama penguji tidak boleh kosong.");
+    async function pindahSesiPeranti(oldDevId) {
+      const newDevId = prompt(`Masukkan ID Peranti (Device ID) telefon pengganti yang baru untuk mengambil alih sesi [${oldDevId}]:`);
+      if (newDevId === null) return;
+      const trimmedNewDevId = newDevId.trim();
+      if (!trimmedNewDevId) {
+        alert("ID Peranti baharu tidak boleh kosong.");
         return;
       }
+
+      const namaPengujiBaru = prompt("Masukkan nama penguji pengganti:");
+      if (namaPengujiBaru === null) return;
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           body: JSON.stringify({ 
-            action: 'updatePenguji', 
-            deviceId: devId, 
-            pengujiBaru: trimmedNama 
+            action: 'transferDeviceSession', 
+            oldDeviceId: oldDevId, 
+            newDeviceId: trimmedNewDevId,
+            pengujiBaru: namaPengujiBaru.trim()
           })
         });
         const result = await res.json();
         if (result.success) {
-          alert("✅ Nama penguji berjaya dikemas kini.");
+          alert("✅ Sesi berjaya dipindahkan ke peranti baharu!");
           muatLogAdmin();
         } else {
-          alert("Gagal: " + (result.message || "Gagal mengemas kini nama penguji."));
+          alert("Gagal: " + (result.message || "Gagal memindahkan sesi."));
         }
       } catch(e) {
-        alert("Ralat semasa mengemas kini penguji.");
+        alert("Ralat semasa memindahkan sesi peranti.");
       }
     }
 
