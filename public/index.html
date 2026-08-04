@@ -40,11 +40,11 @@
     </div>
   </div>
 
-  <!-- MODAL PENGURUSAN PESILAT -->
+  <!-- MODAL PENGURUSAN PESILAT (PILIH TAMBAH/BUANG) -->
   <div id="pesilatModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="text-lg font-bold text-slate-800">Pengurusan & Susunan Pesilat Dalam Sesi</h3>
+        <h3 class="text-lg font-bold text-slate-800">Pengurusan Pesilat Dalam Sesi</h3>
         <button onclick="tutupModalPesilat()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
       </div>
       
@@ -54,9 +54,11 @@
 
       <div id="modalPesilatContainer" class="flex-1 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50 min-h-[200px]"></div>
 
-      <div class="flex justify-between items-center pt-2 border-t">
-        <span class="text-xs text-gray-500">Gunakan butang ⬆/⬇ untuk susun giliran pesilat terpilih.</span>
-        <button onclick="kemaskiniPesilatSesi()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition text-sm">
+      <div class="flex justify-end items-center pt-2 border-t gap-2">
+        <button onclick="tutupModalPesilat()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm transition">
+          Batal
+        </button>
+        <button onclick="kemaskiniPesilatSesi()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2 rounded-xl shadow transition text-sm">
           Simpan & Kemaskini Borang
         </button>
       </div>
@@ -76,6 +78,25 @@
         <div id="autoSaveStatus" class="text-[10px] text-emerald-400 mt-1 font-semibold"></div>
       </div>
     </header>
+
+    <!-- KAD SAMBUNG SESI (JIKA TER-REFRESH) -->
+    <div id="kadSambungSesi" class="bg-amber-50 border-2 border-amber-400 rounded-2xl p-5 mb-6 shadow-xl hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span class="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">Draft Ditemui</span>
+          <h3 class="text-base font-bold text-slate-900 mt-1">Sesi Penilaian Terdahulu Dikesan</h3>
+          <p id="infoDraftSesi" class="text-xs text-slate-600 mt-0.5"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="padamSesiDraf()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-rose-300 transition">
+            🗑️ Padam & Mula Baru
+          </button>
+          <button onclick="sambungSesiDraf()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5">
+            ▶️ Sambung Sesi
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- LANGKAH 1 -->
     <section id="step1" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200">
@@ -145,28 +166,19 @@
           <h2 class="text-lg font-bold text-slate-800">Borang Markah Penilaian</h2>
           <p id="infoSheetBorang" class="text-xs text-amber-600 font-bold font-mono"></p>
         </div>
-        <div class="flex gap-2 flex-wrap">
+        <div>
           <button onclick="bukaModalPesilat()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow">
             ➕/➖ Urus Pesilat
-          </button>
-          <button onclick="simpanMarkah(false)" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow">
-            🔄 Kemaskini
           </button>
         </div>
       </div>
 
       <div id="papanPenilaianContainer" class="space-y-3 overflow-x-auto pb-4"></div>
 
-      <!-- DIBUANG: Butang Edit Pesilat di sebelah kiri -->
-      <div class="flex justify-end pt-4 border-t gap-2 flex-wrap">
-        <div class="flex gap-2">
-          <button onclick="simpanMarkah(false)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
-            🔄 Kemaskini
-          </button>
-          <button onclick="simpanMarkah(true)" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xl transition flex items-center gap-2 text-sm">
-            ✅ Hantar Markah Akhir
-          </button>
-        </div>
+      <div class="flex justify-end pt-4 border-t">
+        <button onclick="simpanMarkah(false)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-8 py-3 rounded-xl shadow-xl transition flex items-center gap-2 text-sm">
+          🔄 Kemaskini Markah
+        </button>
       </div>
     </section>
 
@@ -196,7 +208,7 @@
     window.onload = async function() {
       document.getElementById('devIdTag').innerText = "ID: " + DEVICE_ID;
       await muatDataAwal();
-      pulihkanSesiTempatan();
+      semakDrafSesiTerdahulu();
       setInterval(pingStatusAndNotif, 5000);
     };
 
@@ -244,14 +256,6 @@
         opt.textContent = tp;
         select.appendChild(opt);
       });
-      
-      const saved = localStorage.getItem('SILAT_DRAFT_SESSION');
-      if (saved) {
-        try {
-          const draft = JSON.parse(saved);
-          if (draft.tp) select.value = draft.tp;
-        } catch(e) {}
-      }
     }
 
     function tunjukLangkah(no, pushHistory = true) {
@@ -342,9 +346,7 @@
 
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -365,33 +367,44 @@
       }
     }
 
+    /* BINA BORANG MARKAH DENGAN BUTANG NAIK/TURUN GILIRAN PESILAT */
     function binaBorangMarkah(kriteriaObj) {
       const container = document.getElementById('papanPenilaianContainer');
       const kriteria = kriteriaObj.kriteria || [];
       const maks = kriteriaObj.markahMaks || [];
 
+      // Simpan nilai markah sedia ada supaya tidak hilang bila susunan bertukar
       const markahSimpanan = {};
-      PESILAT_TERPILIH.forEach((_, pIdx) => {
-        const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
+      PESILAT_TERPILIH.forEach((p) => {
+        const inputs = document.querySelectorAll(`[data-ic="${p.ic}"]`);
         if (inputs.length > 0) {
-          markahSimpanan[pIdx] = Array.from(inputs).map(i => i.value);
+          markahSimpanan[p.ic] = Array.from(inputs).map(i => i.value);
         }
       });
 
       container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
         <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 min-w-[850px]">
           
-          <div class="w-80 flex-shrink-0 border-r border-slate-200 pr-3 grid grid-cols-12 gap-1 text-xs">
-            <div class="col-span-1 font-black text-amber-600 flex items-center">#${pIdx + 1}</div>
-            <div class="col-span-11 space-y-1">
-              <div class="font-bold text-gray-900 leading-tight break-words" title="${p.nama}">${p.nama}</div>
-              <div class="text-[11px] text-slate-600 flex justify-between gap-1">
-                <span>IC: <span class="font-mono font-semibold">${p.ic}</span></span>
-                <span class="bg-slate-200 px-1.5 py-0.5 rounded text-[10px] font-semibold">${p.gelanggang}</span>
+          <!-- BAHAGIAN NAMA & BUTANG NAIK/TURUN -->
+          <div class="w-80 flex-shrink-0 border-r border-slate-200 pr-3 flex items-center gap-2">
+            <div class="flex flex-col gap-1">
+              <button onclick="gerakPesilatDirect(${pIdx}, -1)" class="bg-slate-200 hover:bg-amber-500 hover:text-white px-1.5 py-0.5 rounded text-[10px] font-bold transition ${pIdx === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${pIdx === 0 ? 'disabled' : ''} title="Naikkan">⬆</button>
+              <button onclick="gerakPesilatDirect(${pIdx}, 1)" class="bg-slate-200 hover:bg-amber-500 hover:text-white px-1.5 py-0.5 rounded text-[10px] font-bold transition ${pIdx === PESILAT_TERPILIH.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${pIdx === PESILAT_TERPILIH.length - 1 ? 'disabled' : ''} title="Turunkan">⬇</button>
+            </div>
+            
+            <div class="flex-1 grid grid-cols-12 gap-1 text-xs">
+              <div class="col-span-2 font-black text-amber-600 flex items-center">#${pIdx + 1}</div>
+              <div class="col-span-10 space-y-1">
+                <div class="font-bold text-gray-900 leading-tight break-words" title="${p.nama}">${p.nama}</div>
+                <div class="text-[11px] text-slate-600 flex justify-between gap-1">
+                  <span>IC: <span class="font-mono font-semibold">${p.ic}</span></span>
+                  <span class="bg-slate-200 px-1.5 py-0.5 rounded text-[10px] font-semibold">${p.gelanggang}</span>
+                </div>
               </div>
             </div>
           </div>
 
+          <!-- BAHAGIAN INPUT MARKAH -->
           <div class="flex-1 flex items-center gap-2 overflow-x-auto py-1">
             ${kriteria.map((k, kIdx) => `
               <div class="bg-white p-2 rounded-lg border border-slate-200 min-w-[130px] flex-1 text-center shadow-sm">
@@ -402,6 +415,7 @@
                 <input type="number" 
                        min="0" 
                        max="${maks[kIdx] || 100}" 
+                       data-ic="${p.ic}"
                        data-pidx="${pIdx}" 
                        data-kidx="${kIdx}"
                        data-max="${maks[kIdx] || 100}"
@@ -412,6 +426,7 @@
             `).join('')}
           </div>
 
+          <!-- JUMLAH MARKAH -->
           <div class="w-24 flex-shrink-0 bg-amber-50 border border-amber-300 rounded-lg p-2 text-center shadow-inner">
             <span class="text-[10px] font-bold text-amber-800 uppercase block">Jumlah</span>
             <span id="jumlahMarkah_${pIdx}" class="text-lg font-black text-amber-600">0</span>
@@ -420,15 +435,32 @@
         </div>
       `).join('');
 
-      PESILAT_TERPILIH.forEach((_, pIdx) => {
-        if (markahSimpanan[pIdx]) {
-          const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
+      // Pulihkan semula markah ke dalam input
+      PESILAT_TERPILIH.forEach((p, pIdx) => {
+        if (markahSimpanan[p.ic]) {
+          const inputs = document.querySelectorAll(`[data-ic="${p.ic}"]`);
           inputs.forEach((inp, i) => {
-            if (markahSimpanan[pIdx][i] !== undefined) inp.value = markahSimpanan[pIdx][i];
+            if (markahSimpanan[p.ic][i] !== undefined) inp.value = markahSimpanan[p.ic][i];
           });
           kiraJumlahPesilat(pIdx);
         }
       });
+    }
+
+    /* PENGURUSAN ALIH PESILAT DIRECT DI BORANG */
+    function gerakPesilatDirect(index, arah) {
+      const newIndex = index + arah;
+      if (newIndex < 0 || newIndex >= PESILAT_TERPILIH.length) return;
+      
+      const temp = PESILAT_TERPILIH[index];
+      PESILAT_TERPILIH[index] = PESILAT_TERPILIH[newIndex];
+      PESILAT_TERPILIH[newIndex] = temp;
+      
+      const tp = document.getElementById('pilihTaliPinggang').value;
+      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
+      
+      binaBorangMarkah(kriteriaObj);
+      simpanSesiTempatan();
     }
 
     function semakDanKiraMarkah(inputEl, pIdx) {
@@ -495,9 +527,7 @@
 
         await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
 
@@ -510,8 +540,8 @@
       }
     }
 
-    async function simpanMarkah(isFinal = false) {
-      showLoading(isFinal ? "Menghantar Markah Akhir..." : "Mengemas kini Markah...");
+    async function simpanMarkah() {
+      showLoading("Mengemas kini Markah...");
 
       const dataMarkah = PESILAT_TERPILIH.map((p, pIdx) => {
         const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
@@ -534,20 +564,13 @@
 
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
 
         if (data.success) {
-          alert(isFinal ? "✅ Markah berjaya dihantar sepenuhnya!" : "🔄 Markah berjaya dikemas kini.");
-          if (isFinal) {
-            localStorage.removeItem('SILAT_DRAFT_SESSION');
-            hentikanAutoSave();
-            tunjukLangkah(1);
-          }
+          alert("🔄 Markah berjaya dikemas kini.");
         } else {
           alert("Gagal simpan: " + data.message);
         }
@@ -568,7 +591,6 @@
       document.getElementById('pesilatModal').classList.add('hidden');
     }
 
-    /* PENGURUSAN PESILAT & SUSUNAN (NAIK/TURUN) */
     function tapisPesilatModal() {
       const tp = document.getElementById('pilihTaliPinggang').value;
       const keyword = document.getElementById('searchPesilatInput').value.toLowerCase().trim();
@@ -588,8 +610,7 @@
       }
 
       container.innerHTML = senarai.map(p => {
-        const idxDalamTerpilih = PESILAT_TERPILIH.findIndex(pt => pt.ic === p.ic);
-        const isSelected = idxDalamTerpilih !== -1;
+        const isSelected = PESILAT_TERPILIH.some(pt => pt.ic === p.ic);
 
         return `
           <div class="flex items-center justify-between p-2.5 bg-white border rounded-lg hover:bg-amber-50 gap-2">
@@ -600,12 +621,6 @@
                 <div class="text-gray-500">${p.gelanggang} | IC: ${p.ic}</div>
               </div>
             </label>
-            ${isSelected ? `
-              <div class="flex items-center gap-1">
-                <button type="button" onclick="gerakPesilat(${idxDalamTerpilih}, -1)" class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-xs font-bold" title="Alih Ke Atas">⬆</button>
-                <button type="button" onclick="gerakPesilat(${idxDalamTerpilih}, 1)" class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-xs font-bold" title="Alih Ke Bawah">⬇</button>
-              </div>
-            ` : ''}
           </div>
         `;
       }).join('');
@@ -619,17 +634,6 @@
       } else {
         PESILAT_TERPILIH = PESILAT_TERPILIH.filter(p => p.ic !== ic);
       }
-      tapisPesilatModal();
-    }
-
-    function gerakPesilat(index, arah) {
-      const newIndex = index + arah;
-      if (newIndex < 0 || newIndex >= PESILAT_TERPILIH.length) return;
-      
-      const temp = PESILAT_TERPILIH[index];
-      PESILAT_TERPILIH[index] = PESILAT_TERPILIH[newIndex];
-      PESILAT_TERPILIH[newIndex] = temp;
-      
       tapisPesilatModal();
     }
 
@@ -653,15 +657,32 @@
         inputs: {}
       };
 
-      PESILAT_TERPILIH.forEach((_, pIdx) => {
-        const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-        draftData.inputs[pIdx] = Array.from(inputs).map(i => i.value);
+      PESILAT_TERPILIH.forEach((p, pIdx) => {
+        const inputs = document.querySelectorAll(`[data-ic="${p.ic}"]`);
+        draftData.inputs[p.ic] = Array.from(inputs).map(i => i.value);
       });
 
       localStorage.setItem('SILAT_DRAFT_SESSION', JSON.stringify(draftData));
     }
 
-    function pulihkanSesiTempatan() {
+    /* PENGURUSAN PEMULIHAN SESI / REFRESH PAGE */
+    function semakDrafSesiTerdahulu() {
+      const saved = localStorage.getItem('SILAT_DRAFT_SESSION');
+      if (!saved) return;
+
+      try {
+        const draft = JSON.parse(saved);
+        if (draft && (draft.penguji || draft.tp || (draft.pesilat && draft.pesilat.length > 0))) {
+          const kad = document.getElementById('kadSambungSesi');
+          const info = document.getElementById('infoDraftSesi');
+          
+          info.innerText = `Penguji: ${draft.penguji || '-'} | Peringkat: ${draft.tp || '-'} | Pesilat: ${draft.pesilat ? draft.pesilat.length : 0} orang`;
+          kad.classList.remove('hidden');
+        }
+      } catch(e) {}
+    }
+
+    function sambungSesiDraf() {
       const saved = localStorage.getItem('SILAT_DRAFT_SESSION');
       if (!saved) return;
 
@@ -678,29 +699,46 @@
             document.getElementById('infoSheetBorang').innerText = "Sheet: " + CURRENT_SHEET_TITLE;
           }
 
-          if (draft.langkah && draft.langkah > 1) {
-            const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
-            if (draft.langkah === 3) {
-              binaBorangMarkah(kriteriaObj);
-            } else if (draft.langkah === 2) {
-              keLangkah2();
-            }
+          const targetLangkah = draft.langkah || 1;
+          const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
 
+          if (targetLangkah === 3) {
+            binaBorangMarkah(kriteriaObj);
+            
+            // Masukkan balik markah input
             if (draft.inputs) {
-              Object.keys(draft.inputs).forEach(pIdx => {
-                const vals = draft.inputs[pIdx];
-                const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
+              Object.keys(draft.inputs).forEach(ic => {
+                const vals = draft.inputs[ic];
+                const inputs = document.querySelectorAll(`[data-ic="${ic}"]`);
                 inputs.forEach((inp, i) => {
                   if (vals[i] !== undefined) inp.value = vals[i];
                 });
-                kiraJumlahPesilat(pIdx);
               });
+              PESILAT_TERPILIH.forEach((_, pIdx) => kiraJumlahPesilat(pIdx));
             }
-
-            tunjukLangkah(draft.langkah, false);
+          } else if (targetLangkah === 2) {
+            keLangkah2();
           }
+
+          tunjukLangkah(targetLangkah, false);
+          document.getElementById('kadSambungSesi').classList.add('hidden');
         }
-      } catch(e) {}
+      } catch(e) {
+        alert("Gagal memulihkan sesi.");
+      }
+    }
+
+    function padamSesiDraf() {
+      if (confirm("Adakah anda pasti ingin memadam draf sesi ini dan mula baru?")) {
+        localStorage.removeItem('SILAT_DRAFT_SESSION');
+        document.getElementById('kadSambungSesi').classList.add('hidden');
+        document.getElementById('namaPenguji').value = '';
+        document.getElementById('pilihTaliPinggang').value = '';
+        document.getElementById('kumpulanUjian').value = '';
+        PESILAT_TERPILIH = [];
+        CURRENT_SHEET_TITLE = "";
+        tunjukLangkah(1, false);
+      }
     }
 
     async function hantarLogPenguji() {
@@ -718,9 +756,7 @@
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
