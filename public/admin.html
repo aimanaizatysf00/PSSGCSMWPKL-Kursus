@@ -78,7 +78,7 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0jkG615hoVfbaV5AQRc7Lj89FwpfOaIxKc9lZJkUUKa7gwKpVad2hwai2vZkDzed0tA/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwq4fmTa0c87A6A0IYnPbc7uYS1_1xprZN2Ytw-gL4aRXCrVsSmbvRBl4jigjSilYIJjg/exec"; 
 
     window.onload = function() {
       muatLogAdmin();
@@ -299,7 +299,7 @@
     }
 
     async function pindahSesiPeranti(oldDevId) {
-      const newDevId = prompt(`Masukkan ID Peranti (Device ID) telefon pengganti yang baru untuk mengambil alih sesi [${oldDevId}]:`);
+      const newDevId = prompt(`Masukkan ID Peranti (Device ID) telefon baharu untuk mengambil alih sesi [${oldDevId}]:`);
       if (newDevId === null) return;
       const trimmedNewDevId = newDevId.trim();
       if (!trimmedNewDevId) {
@@ -307,22 +307,18 @@
         return;
       }
 
-      const namaPengujiBaru = prompt("Masukkan nama penguji pengganti:");
-      if (namaPengujiBaru === null) return;
-
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           body: JSON.stringify({ 
             action: 'transferDeviceSession', 
             oldDeviceId: oldDevId, 
-            newDeviceId: trimmedNewDevId,
-            pengujiBaru: namaPengujiBaru.trim()
+            newDeviceId: trimmedNewDevId
           })
         });
         const result = await res.json();
         if (result.success) {
-          alert("✅ Sesi berjaya dipindahkan ke peranti baharu!");
+          alert("✅ Sesi berjaya dipindahkan! Sila buka pautan pada peranti baharu.");
           muatLogAdmin();
         } else {
           alert("Gagal: " + (result.message || "Gagal memindahkan sesi."));
