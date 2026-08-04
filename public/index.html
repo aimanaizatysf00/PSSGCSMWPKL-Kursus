@@ -3,727 +3,449 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Penilaian Ujian Kenaikan Tali Pinggang</title>
+  <title>Sistem Ujian Kenaikan Bengkung / Tali Pinggang</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+    /* Sembunyikan spinner input number */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-3 md:p-6 text-gray-800">
+<body class="bg-slate-900 text-slate-800 min-h-screen font-sans flex flex-col justify-between">
 
-  <div class="max-w-5xl mx-auto space-y-6">
+  <!-- OVERLAY LOADING GLOBAL -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white hidden">
+    <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <p id="loadingText" class="font-semibold text-lg animate-pulse text-amber-400">Memuatkan data...</p>
+  </div>
 
-    <!-- HEADER / POP-UP NOTIFIKASI URUS SETIA -->
-    <div id="notifBox" class="hidden bg-amber-500 text-white p-4 rounded-xl shadow-lg border-2 border-amber-600 flex justify-between items-center animate-bounce">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">📢</span>
-        <div>
-          <h3 class="font-bold text-sm uppercase tracking-wide">Pengumuman Urus Setia</h3>
-          <p id="notifMesej" class="text-sm font-medium"></p>
-        </div>
-      </div>
-      <button onclick="tutupNotif()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Tutup</button>
+  <!-- POP-UP NOTIFIKASI PENGUMUMAN -->
+  <div id="notifModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border-t-8 border-amber-500 text-center space-y-4 animate-bounce">
+      <div class="text-4xl">📢</div>
+      <h3 class="text-xl font-bold text-gray-900">Pengumuman Urus Setia</h3>
+      <p id="notifMesej" class="text-gray-700 font-medium text-sm leading-relaxed"></p>
+      <button onclick="tutupNotif()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition">
+        Faham & Tutup
+      </button>
     </div>
+  </div>
 
-    <!-- TAJUK UTAMA -->
-    <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex justify-between items-center">
+  <div class="container mx-auto p-4 max-w-4xl flex-grow">
+    
+    <!-- HEADER -->
+    <header class="bg-slate-800 text-white p-5 rounded-2xl shadow-xl mb-6 flex justify-between items-center border border-slate-700">
       <div>
-        <h1 class="text-xl md:text-2xl font-black tracking-wide text-amber-400">BORANG PENILAIAN PENGUJI</h1>
-        <p class="text-xs text-slate-400">Sistem Pengurusan Ujian Kenaikan Tali Pinggang Silat</p>
+        <h1 class="text-xl md:text-2xl font-black text-amber-400 tracking-wide">SISTEM PENILAIAN SILAT</h1>
+        <p class="text-xs text-slate-400">Ujian Kenaikan Bengkung & Tali Pinggang</p>
       </div>
-      <div class="text-right flex items-center gap-2">
-        <span id="statusSave" class="text-[11px] font-semibold text-slate-300 hidden"></span>
-        <span id="statusDevice" class="inline-block px-2.5 py-1 bg-green-600 text-white text-[10px] font-bold rounded-full uppercase">Aktif</span>
+      <div class="text-right text-xs text-slate-300">
+        <div id="devIdTag" class="font-mono bg-slate-900 px-2 py-1 rounded text-amber-300 font-bold">ID: -</div>
       </div>
-    </div>
+    </header>
 
-    <!-- KOTAK HISTORY / REKOD SESI TERAKHIR (AKAN MUNCUL JIKA ADA SESI TERPUTUS) -->
-    <div id="boxHistory" class="hidden bg-amber-50 border-2 border-amber-400 p-5 rounded-2xl shadow-md space-y-3">
-      <div class="flex items-start justify-between">
-        <div class="flex items-center gap-3">
-          <span class="text-3xl">📌</span>
-          <div>
-            <h3 class="font-black text-amber-900 text-base">Sesi Penilaian Terakhir Ditemui!</h3>
-            <p id="infoHistory" class="text-xs text-amber-800 font-medium mt-0.5"></p>
-          </div>
-        </div>
-        <span id="badgeHistoryStep" class="bg-amber-200 text-amber-900 font-bold text-[10px] px-2.5 py-1 rounded-full border border-amber-300"></span>
-      </div>
-      
-      <div class="flex gap-2 pt-1">
-        <button onclick="sambungSesiTerakhir()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow transition flex justify-center items-center gap-2">
-          ▶️ Sambung Sesi Terakhir
-        </button>
-        <button onclick="padamHistorySesi()" class="px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
-          🗑️ Mula Sesi Baru
-        </button>
-      </div>
-    </div>
-
-    <!-- LANGKAH 1: TETAPAN SESI UJIAN -->
-    <div id="langkah1" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-      <div class="border-b pb-3 flex items-center justify-between">
+    <!-- LANGKAH 1: PILIHAN PENGUJI & PERINGKAT -->
+    <section id="step1" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200">
+      <div class="border-b pb-3 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded-full">1</span>
-          Maklumat Sesi & Penguji
+          <span class="bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span> 
+          Tetapan Ujian & Penguji
         </h2>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- 1. NAMA PENGUJI -->
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nama Penguji</label>
-          <input type="text" id="namaPenguji" oninput="simpanStateLokal()" placeholder="Contoh: Ustaz Ahmad" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Penguji</label>
+          <input type="text" id="namaPenguji" placeholder="Cth: Guru Azman" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold">
         </div>
-
-        <!-- 2. PILIH TALI PINGGANG -->
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tali Pinggang Diuji</label>
-          <select id="pilihanTaliPinggang" onchange="tapisPesilat(); simpanStateLokal();" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Peringkat / Tali Pinggang</label>
+          <select id="pilihTaliPinggang" onchange="kemaskiniKriteria()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold bg-white">
             <option value="">-- Pilih Tali Pinggang --</option>
           </select>
         </div>
-
-        <!-- 3. KUMPULAN -->
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Kumpulan</label>
-          <input type="number" id="kumpulanSesi" min="1" oninput="simpanStateLokal()" placeholder="Contoh: 1" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Gelanggang / Kumpulan</label>
+          <input type="text" id="kumpulanUjian" placeholder="Cth: K1 / Pusat" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold">
         </div>
       </div>
 
-      <button onclick="keLangkah2()" class="w-full bg-slate-800 hover:bg-slate-900 text-amber-400 font-bold py-3 rounded-xl transition shadow-md flex justify-center items-center gap-2 text-sm">
-        Seterusnya: Pilih Pesilat ➔
-      </button>
-    </div>
+      <div class="flex justify-end pt-2">
+        <button onclick="keLangkah2()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
+          Seterusnya: Pilih Pesilat ➔
+        </button>
+      </div>
+    </section>
 
     <!-- LANGKAH 2: PILIH PESILAT -->
-    <div id="langkah2" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+    <section id="step2" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200 hidden">
       <div class="border-b pb-3 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded-full">2</span>
-          Pilih Pesilat Mengikut Tali Pinggang Diuji
+          <span class="bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span> 
+          Pilih Senarai Pesilat
         </h2>
-        <span id="badgeTP" class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-300"></span>
+        <span id="labelTaliPinggangDipilih" class="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full"></span>
       </div>
 
-      <div class="flex justify-between items-center text-xs text-slate-500">
-        <span>Tanda pesilat yang hadir untuk dinilai:</span>
-        <button onclick="tandaSemua(true)" class="text-amber-600 font-bold hover:underline">Pilih Semua</button>
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <p class="text-xs text-slate-500">Tanda pesilat yang mengambil ujian dalam sesi ini:</p>
+          <button onclick="toggleSemuaPesilat()" class="text-xs font-bold text-amber-600 hover:underline">Pilih Semua / Batal</button>
+        </div>
+        <div id="senaraiPesilatContainer" class="max-h-80 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50">
+          <!-- Senarai Pesilat Dijana Automatik -->
+        </div>
       </div>
 
-      <!-- SENARAI PESILAT (CHECKBOX) -->
-      <div id="senaraiPesilatContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-1 border rounded-xl bg-slate-50">
-        <p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>
-      </div>
-
-      <div class="flex gap-3">
-        <button onclick="keLangkah1()" class="w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition text-sm">
+      <div class="flex justify-between pt-2">
+        <button onclick="tunjukLangkah(1)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-5 py-2.5 rounded-xl transition text-sm">
           ⬅ Kembali
         </button>
-        <button onclick="janaBorangPenilaian()" class="w-2/3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl transition shadow-md text-sm">
-          Cipta Sheet & Mula Menilai 📝
+        <button onclick="ciptaSesiUjian()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
+          Mula Penilaian ➔
         </button>
       </div>
-    </div>
+    </section>
 
     <!-- LANGKAH 3: BORANG PENILAIAN MARKAH -->
-    <div id="langkah3" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+    <section id="step3" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200 hidden">
       <div class="border-b pb-3 flex justify-between items-center flex-wrap gap-2">
         <div>
-          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <span class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded-full">3</span>
-            Kemas Masuk Markah Pesilat
-          </h2>
-          <p id="subTajukSheet" class="text-xs text-slate-500 mt-1 font-mono"></p>
+          <h2 class="text-lg font-bold text-slate-800">Boram Markah Penilaian</h2>
+          <p id="infoSheetBorang" class="text-xs text-amber-600 font-bold font-mono"></p>
         </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="tamatSesiLangkah3()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition">
-            🔄 Sesi Baru
-          </button>
-          <button onclick="bukaModalTambahPesilat()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1">
-            ➕ Tambah Pesilat
-          </button>
-        </div>
-      </div>
-
-      <!-- JADUAL INPUT MARKAH -->
-      <div class="overflow-x-auto border border-slate-200 rounded-xl">
-        <table class="w-full text-left text-xs border-collapse">
-          <thead id="headMarkah" class="bg-slate-800 text-white"></thead>
-          <tbody id="bodyMarkah" class="divide-y divide-slate-200 bg-white"></tbody>
-        </table>
-      </div>
-
-      <div class="flex gap-3">
-        <button onclick="keLangkah2()" class="w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition text-sm">
-          ⬅ Ubah Pesilat
-        </button>
-        <button onclick="simpanMarkahToGS(true)" class="w-2/3 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition shadow-md text-sm flex justify-center items-center gap-2">
-          💾 Simpan Semua Markah (Manual)
+        <button onclick="simpanMarkah(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1 shadow">
+          💾 Simpan Draf
         </button>
       </div>
-    </div>
+
+      <div id="papanPenilaianContainer" class="space-y-6">
+        <!-- Jadual Borang Markah Pesilat Dijana Di Sini -->
+      </div>
+
+      <div class="flex justify-between pt-4 border-t">
+        <button onclick="tunjukLangkah(2)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-5 py-2.5 rounded-xl transition text-sm">
+          ⬅ Edit Pesilat
+        </button>
+        <button onclick="simpanMarkah(true)" class="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-xl shadow-xl transition flex items-center gap-2 text-sm">
+          ✅ Hantar Markah Akhir
+        </button>
+      </div>
+    </section>
 
   </div>
 
-  <!-- MODAL POPUP: TAMBAH PESILAT LEPASAN -->
-  <div id="modalTambah" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl border">
-      <h3 class="font-bold text-slate-800 text-base border-b pb-2">➕ Tambah Pesilat Tambahan</h3>
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Pesilat Lain (Tali Pinggang Sama)</label>
-          <select id="selectExtraPesilat" class="w-full border p-2 rounded-lg text-xs bg-slate-50"></select>
-        </div>
-      </div>
-      <div class="flex gap-2 justify-end pt-2">
-        <button onclick="tutupModalTambah()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Batal</button>
-        <button onclick="sahkanTambahPesilat()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-bold">Tambah Ke Jadual</button>
-      </div>
-    </div>
-  </div>
+  <footer class="text-center p-4 text-xs text-slate-500">
+    Sistem Penilaian Silat &copy; 2026 - Versi Web Apps
+  </footer>
 
   <script>
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwy_Qkd0fyt4xpnzhk6ulabR-Qf-DaL4DVIKLWGUPv4_HYuUpyI8JoPNBoWEaokTqehRg/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlM2RWDgVaq2VAOpiDjrtg0P7u46DlgOHtloHylL38gYIrkqJU2ccXZEeJq3dPVOKQzQ/exec";
 
-  let DEVICE_ID = localStorage.getItem("DEVICE_ID_PENGUJI") || "DEV_" + Math.random().toString(36).substr(2, 7).toUpperCase();
-  localStorage.setItem("DEVICE_ID_PENGUJI", DEVICE_ID);
+    let DB_PESILAT = [];
+    let DB_TETAPAN = {};
+    let PESILAT_TERPILIH = [];
+    let CURRENT_SHEET_TITLE = "";
+    let LAST_NOTIF_ID = 0;
+    
+    // Jana ID Peranti Unik
+    let DEVICE_ID = localStorage.getItem('SILAT_DEV_ID');
+    if (!DEVICE_ID) {
+      DEVICE_ID = 'DEV_' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      localStorage.setItem('SILAT_DEV_ID', DEVICE_ID);
+    }
 
-  let dbPesilat = [];
-  let dbTetapan = {};
-  let activeSheetTitle = "";
-  let activeKriteria = [];
-  let activePesilatPenilaian = []; 
-  let currentLangkah = 1;
-  let lastNotifId = 0;
-
-  let hasUnsavedChanges = false;
-  let isSaving = false;
-
-  window.onload = async function() {
-    await muatDataAsas();
-    semakHistorySesi();
-
-    setInterval(semakStatusPerantiDanNotif, 4000);
-
-    setInterval(() => {
-      if (hasUnsavedChanges && !isSaving && activeSheetTitle && currentLangkah === 3) {
-        simpanMarkahToGS(false);
-      }
-    }, 15000);
-  };
-
-  // ==========================================
-  // SISTEM STORAGE & HISTORY SESI
-  // ==========================================
-  function simpanStateLokal(langkah = currentLangkah) {
-    currentLangkah = langkah;
-    const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
-
-    const dataSesi = {
-      langkah: currentLangkah,
-      penguji: document.getElementById('namaPenguji').value.trim(),
-      tp: document.getElementById('pilihanTaliPinggang').value.trim(),
-      kumpulan: document.getElementById('kumpulanSesi').value.trim(),
-      chkSelectedIC: chkSelected,
-      activeSheetTitle: activeSheetTitle,
-      activeKriteria: activeKriteria,
-      activePesilatPenilaian: activePesilatPenilaian,
-      timestamp: new Date().getTime()
+    window.onload = async function() {
+      document.getElementById('devIdTag').innerText = "ID: " + DEVICE_ID;
+      await muatDataAwal();
+      setInterval(pingStatusAndNotif, 5000);
     };
 
-    localStorage.setItem("SESI_PENGUJI_TERAKHIR", JSON.stringify(dataSesi));
-  }
-
-  function semakHistorySesi() {
-    const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
-    if (!saved) return;
-
-    try {
-      const state = JSON.parse(saved);
-      if (state && state.penguji && state.tp) {
-        const info = `Penguji: <b>${state.penguji}</b> | Tali Pinggang: <b>${state.tp}</b> | Kumpulan: <b>${state.kumpulan}</b>`;
-        document.getElementById('infoHistory').innerHTML = info;
-        document.getElementById('badgeHistoryStep').innerText = `Terhenti di Langkah ${state.langkah}`;
-        document.getElementById('boxHistory').classList.remove('hidden');
-      }
-    } catch (e) {
-      console.error("Ralat semak history:", e);
+    function showLoading(msg = "Memuatkan...") {
+      document.getElementById('loadingText').innerText = msg;
+      document.getElementById('loadingOverlay').classList.remove('hidden');
     }
-  }
 
-  function sambungSesiTerakhir() {
-    const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
-    if (!saved) return;
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }
 
-    const state = JSON.parse(saved);
-
-    document.getElementById('namaPenguji').value = state.penguji || '';
-    document.getElementById('pilihanTaliPinggang').value = state.tp || '';
-    document.getElementById('kumpulanSesi').value = state.kumpulan || '';
-
-    tapisPesilat();
-
-    if (state.langkah === 2) {
-      if (state.chkSelectedIC && state.chkSelectedIC.length > 0) {
-        const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
-        checkboxes.forEach(cb => {
-          if (state.chkSelectedIC.includes(cb.value)) cb.checked = true;
-        });
+    // MUAT DATA PESILAT & TETAPAN
+    async function muatDataAwal() {
+      showLoading("Memuatkan Pangkalan Data...");
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        const data = await res.json();
+        
+        if (data.success) {
+          DB_PESILAT = data.pesilat || [];
+          DB_TETAPAN = data.tetapan || {};
+          isiDropdownTaliPinggang();
+        } else {
+          alert("Gagal muat data: " + data.message);
+        }
+      } catch (e) {
+        alert("Ralat Rangkaian semasa muat data.");
+      } finally {
+        hideLoading();
       }
-      keLangkah2();
-    } else if (state.langkah === 3) {
-      activeSheetTitle = state.activeSheetTitle;
-      activeKriteria = state.activeKriteria || [];
-      activePesilatPenilaian = state.activePesilatPenilaian || [];
+    }
 
-      binaJadualMarkah();
+    function isiDropdownTaliPinggang() {
+      const select = document.getElementById('pilihTaliPinggang');
+      select.innerHTML = '<option value="">-- Pilih Tali Pinggang --</option>';
+      Object.keys(DB_TETAPAN).forEach(tp => {
+        const opt = document.createElement('option');
+        opt.value = tp;
+        opt.textContent = tp;
+        select.appendChild(opt);
+      });
+    }
 
-      document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
-      document.getElementById('langkah1').classList.add('hidden');
-      document.getElementById('langkah2').classList.add('hidden');
-      document.getElementById('langkah3').classList.remove('hidden');
+    function tunjukLangkah(no) {
+      [1, 2, 3].forEach(i => {
+        document.getElementById(`step${i}`).classList.toggle('hidden', i !== no);
+      });
+    }
+
+    function keLangkah2() {
+      const penguji = document.getElementById('namaPenguji').value.trim();
+      const tp = document.getElementById('pilihTaliPinggang').value;
+
+      if (!penguji || !tp) {
+        return alert("Sila lengkapkan Nama Penguji dan Peringkat Tali Pinggang!");
+      }
+
+      document.getElementById('labelTaliPinggangDipilih').innerText = tp;
       
-      currentLangkah = 3;
-      paparStatusSave("📂 Sesi Terakhir Dipulihkan");
-      kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
-    }
-
-    document.getElementById('boxHistory').classList.add('hidden');
-  }
-
-  function padamHistorySesi() {
-    localStorage.removeItem("SESI_PENGUJI_TERAKHIR");
-    document.getElementById('boxHistory').classList.add('hidden');
-  }
-
-  function tamatSesiLangkah3() {
-    if (confirm("Adakah anda pasti untuk menamatkan sesi ini & memulakan borang baharu?")) {
-      padamHistorySesi();
-      location.reload();
-    }
-  }
-
-  // ==========================================
-  // LOGIK APLIKASI UTAMA (DITAMBAH BAIK)
-  // ==========================================
-  async function muatDataAsas() {
-    const container = document.getElementById('senaraiPesilatContainer');
-    container.innerHTML = `<p class="col-span-2 text-center text-amber-600 py-6 text-sm font-semibold animate-pulse">⏳ Memuatkan data pesilat...</p>`;
-
-    try {
-      const res = await fetch(APPS_SCRIPT_URL);
-      const data = await res.json();
-
-      if (data.success) {
-        dbPesilat = data.pesilat || [];
-        dbTetapan = data.tetapan || {};
-
-        console.log("Data Pesilat Diterima:", dbPesilat); // Semakan log console
-
-        const selectTP = document.getElementById('pilihanTaliPinggang');
-        selectTP.innerHTML = '<option value="">-- Pilih Tali Pinggang --</option>';
-
-        Object.keys(dbTetapan).forEach(tp => {
-          selectTP.innerHTML += `<option value="${tp}">${tp}</option>`;
-        });
-
-        container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
+      // Tapis Pesilat Mengikut Peringkat
+      const tapisPesilat = DB_PESILAT.filter(p => p.peringkat.toLowerCase() === tp.toLowerCase());
+      const container = document.getElementById('senaraiPesilatContainer');
+      
+      if (tapisPesilat.length === 0) {
+        container.innerHTML = `<p class="text-center text-sm text-gray-500 py-4">Tiada pesilat ditemui untuk peringkat ini.</p>`;
       } else {
-        container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm">Gagal memuatkan data dari Apps Script.</p>`;
+        container.innerHTML = tapisPesilat.map((p, idx) => `
+          <label class="flex items-center gap-3 p-2.5 bg-white border rounded-lg hover:bg-amber-50 cursor-pointer transition">
+            <input type="checkbox" class="chkPesilat w-4 h-4 text-amber-600 rounded" value="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}">
+            <div class="text-xs">
+              <div class="font-bold text-gray-800">${p.nama}</div>
+              <div class="text-gray-500">${p.gelanggang} | IC: ${p.ic}</div>
+            </div>
+          </label>
+        `).join('');
       }
-    } catch (e) {
-      console.error("Gagal muat data asas:", e);
-      container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm">Ralat sambungan ke pelayan.</p>`;
-    }
-  }
 
-  function tapisPesilat() {
-  const selectElem = document.getElementById('pilihanTaliPinggang');
-  // Normalisasikan pilihan dropdown: buang ruang berlebihan & tukar ke lowercase
-  const tpDipilih = selectElem.value.trim().replace(/\s+/g, ' ').toLowerCase();
-  const container = document.getElementById('senaraiPesilatContainer');
-
-  container.innerHTML = '';
-
-  if (!tpDipilih) {
-    container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
-    return;
-  }
-
-  // Tapis data pesilat dengan pembersihan yang sepadan dengan Apps Script
-  const pesilatTersaring = dbPesilat.filter(p => {
-    // Ambil data peringkat/tali pinggang diuji daripada JSON Apps Script
-    const tpPesilat = String(p.peringkat || p.taliPinggangTerkini || '')
-                        .trim()
-                        .replace(/\s+/g, ' ')
-                        .toLowerCase();
-    
-    // Perbandingan anjal (Flexible Matching)
-    return tpPesilat === tpDipilih || tpPesilat.includes(tpDipilih) || tpDipilih.includes(tpPesilat);
-  });
-
-  if (pesilatTersaring.length === 0) {
-    container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">
-      Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"<br>
-      <span class="text-xs font-normal text-slate-500">(Sila semak semula ejaan di tab 'DataPesilat' Lajur E & tab 'Tetapan')</span>
-    </p>`;
-    return;
-  }
-
-  // Paparkan senarai pesilat
-  container.innerHTML = pesilatTersaring.map((p) => `
-    <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
-      <input type="checkbox" name="chkPesilat" value="${p.ic}" onchange="simpanStateLokal()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
-      <div class="overflow-hidden">
-        <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
-        <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang || '-'}</span></p>
-      </div>
-    </label>
-  `).join('');
-}
-
-  function tandaSemua(status) {
-    const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
-    checkboxes.forEach(cb => cb.checked = status);
-    simpanStateLokal();
-  }
-
-  function keLangkah2() {
-    const penguji = document.getElementById('namaPenguji').value.trim();
-    const tp = document.getElementById('pilihanTaliPinggang').value.trim();
-    const kumpulan = document.getElementById('kumpulanSesi').value.trim();
-
-    if (!penguji || !tp || !kumpulan) {
-      return alert("Sila isi Nama Penguji, Pilih Tali Pinggang Diuji, dan Masukkan Nombor Kumpulan.");
+      tunjukLangkah(2);
+      hantarLogPenguji();
     }
 
-    document.getElementById('badgeTP').innerText = tp;
-    document.getElementById('langkah1').classList.add('hidden');
-    document.getElementById('langkah3').classList.add('hidden');
-    document.getElementById('langkah2').classList.remove('hidden');
-
-    simpanStateLokal(2);
-    kemaskiniLogPeranti("Langkah 2: Pilih Pesilat");
-  }
-
-  function keLangkah1() {
-    document.getElementById('langkah2').classList.add('hidden');
-    document.getElementById('langkah3').classList.add('hidden');
-    document.getElementById('langkah1').classList.remove('hidden');
-
-    simpanStateLokal(1);
-    kemaskiniLogPeranti("Halaman Utama");
-  }
-
-  async function janaBorangPenilaian() {
-    const penguji = document.getElementById('namaPenguji').value.trim();
-    const tp = document.getElementById('pilihanTaliPinggang').value.trim();
-    const kumpulan = document.getElementById('kumpulanSesi').value.trim();
-
-    const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
-
-    if (chkSelected.length === 0) {
-      return alert("Sila tandakan sekurang-kurangnya seorang pesilat!");
+    function toggleSemuaPesilat() {
+      const chks = document.querySelectorAll('.chkPesilat');
+      const allChecked = Array.from(chks).every(c => c.checked);
+      chks.forEach(c => c.checked = !allChecked);
     }
 
-    activePesilatPenilaian = dbPesilat.filter(p => chkSelected.includes(p.ic)).map(p => ({
-      ...p,
-      markah: []
-    }));
+    async function ciptaSesiUjian() {
+      const chks = document.querySelectorAll('.chkPesilat:checked');
+      if (chks.length === 0) return alert("Sila pilih sekurang-kurangnya seorang pesilat!");
 
-    activeKriteria = dbTetapan[tp] ? dbTetapan[tp].kriteria : [];
+      PESILAT_TERPILIH = Array.from(chks).map(c => ({
+        ic: c.value,
+        nama: c.getAttribute('data-nama'),
+        gelanggang: c.getAttribute('data-gelanggang')
+      }));
 
-    try {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
+      const penguji = document.getElementById('namaPenguji').value.trim();
+      const tp = document.getElementById('pilihTaliPinggang').value;
+      const kump = document.getElementById('kumpulanUjian').value.trim();
+      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: [], markahMaks: [] };
+
+      showLoading("Mencipta Sheet Ujian...");
+
+      try {
+        const payload = {
           action: 'createSheet',
           penguji: penguji,
           taliPinggang: tp,
-          kumpulan: kumpulan,
-          kriteriaActive: activeKriteria,
-          pesilatPilihan: activePesilatPenilaian
-        })
-      });
+          kumpulan: kump,
+          kriteriaActive: kriteriaObj.kriteria,
+          pesilatPilihan: PESILAT_TERPILIH
+        };
 
-      const data = await res.json();
-      if (data.success) {
-        activeSheetTitle = data.sheetTitle;
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
 
-        binaJadualMarkah();
-        simpanStateLokal(3);
-
-        document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
-        document.getElementById('langkah2').classList.add('hidden');
-        document.getElementById('langkah3').classList.remove('hidden');
-
-        kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
-      } else {
-        alert("Gagal cipta sheet: " + data.message);
-      }
-    } catch (e) {
-      alert("Ralat semasa ciptaan sheet ujian.");
-    }
-  }
-
-  function binaJadualMarkah() {
-    const tp = document.getElementById('pilihanTaliPinggang').value.trim();
-    const markahMaksList = dbTetapan[tp]?.markahMaks || [];
-
-    const thead = document.getElementById('headMarkah');
-    const tbody = document.getElementById('bodyMarkah');
-
-    let headHTML = `<tr>
-      <th class="p-2 border text-center w-12">Susun</th>
-      <th class="p-2 border">Nama Pesilat</th>
-      <th class="p-2 border">Gelanggang</th>`;
-
-    activeKriteria.forEach((k, idx) => {
-      const max = markahMaksList[idx] || 10;
-      headHTML += `<th class="p-2 border text-center">${k}<br><span class="text-[9px] text-amber-300">(Maks: ${max})</span></th>`;
-    });
-
-    headHTML += `<th class="p-2 border text-center">Jumlah</th>
-      <th class="p-2 border text-center w-10">Tindakan</th></tr>`;
-    thead.innerHTML = headHTML;
-
-    let bodyHTML = "";
-    activePesilatPenilaian.forEach((p, pIdx) => {
-      bodyHTML += `<tr data-ic="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}">
-        <td class="p-1 border text-center whitespace-nowrap">
-          <button onclick="ubahSusunan(${pIdx}, -1)" ${pIdx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔼</button>
-          <button onclick="ubahSusunan(${pIdx}, 1)" ${pIdx === activePesilatPenilaian.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔽</button>
-        </td>
-        <td class="p-2 border font-bold text-slate-800">${p.nama}<br><span class="text-[9px] text-slate-400 font-normal">${p.ic}</span></td>
-        <td class="p-2 border text-slate-600">${p.gelanggang || '-'}</td>`;
-
-      activeKriteria.forEach((_, kIdx) => {
-        const max = markahMaksList[kIdx] || 10;
-        const val = p.markah && p.markah[kIdx] !== undefined ? p.markah[kIdx] : 0;
-        bodyHTML += `<td class="p-1 border text-center">
-          <input type="number" min="0" max="${max}" value="${val}" oninput="simpanNilaiInput(${pIdx}, ${kIdx}, this.value)" class="inp-markah-${pIdx} w-12 text-center border p-1 rounded font-bold focus:ring-1 focus:ring-amber-500">
-        </td>`;
-      });
-
-      bodyHTML += `<td class="p-2 border text-center font-black text-amber-700 text-sm" id="jumlah-${pIdx}">0</td>
-        <td class="p-1 border text-center">
-          <button onclick="buangPesilat(${pIdx})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Buang pesilat ini">🗑️</button>
-        </td>
-      </tr>`;
-    });
-
-    tbody.innerHTML = bodyHTML;
-    activePesilatPenilaian.forEach((_, pIdx) => kiraJumlah(pIdx));
-  }
-
-  function simpanNilaiInput(pIdx, kIdx, value) {
-    if (!activePesilatPenilaian[pIdx].markah) {
-      activePesilatPenilaian[pIdx].markah = [];
-    }
-    activePesilatPenilaian[pIdx].markah[kIdx] = Number(value) || 0;
-    kiraJumlah(pIdx);
-
-    hasUnsavedChanges = true;
-    paparStatusSave("⏳ Ada perubahan (Auto-save dalam 15s)");
-
-    simpanStateLokal(3);
-  }
-
-  function kiraJumlah(pIdx) {
-    const inputs = document.querySelectorAll(`.inp-markah-${pIdx}`);
-    let total = 0;
-    inputs.forEach(inp => total += Number(inp.value) || 0);
-    document.getElementById(`jumlah-${pIdx}`).innerText = total;
-  }
-
-  function ubahSusunan(index, arah) {
-    const barisBaru = index + arah;
-    if (barisBaru < 0 || barisBaru >= activePesilatPenilaian.length) return;
-
-    const temp = activePesilatPenilaian[index];
-    activePesilatPenilaian[index] = activePesilatPenilaian[barisBaru];
-    activePesilatPenilaian[barisBaru] = temp;
-
-    binaJadualMarkah();
-    simpanStateLokal(3);
-    hasUnsavedChanges = true;
-    simpanMarkahToGS(false);
-  }
-
-  function buangPesilat(index) {
-    const nama = activePesilatPenilaian[index].nama;
-    if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
-      activePesilatPenilaian.splice(index, 1);
-      binaJadualMarkah();
-      simpanStateLokal(3);
-      hasUnsavedChanges = true;
-      simpanMarkahToGS(false);
-    }
-  }
-
-  function bukaModalTambahPesilat() {
-    const tp = document.getElementById('pilihanTaliPinggang').value.trim().toLowerCase();
-    const select = document.getElementById('selectExtraPesilat');
-
-    const icWujud = activePesilatPenilaian.map(p => p.ic);
-    const bakiPesilat = dbPesilat.filter(p => {
-      const tpDiuji = String(p.peringkat || p.taliPinggang || p.kategori || '').trim().toLowerCase();
-      return (tpDiuji === tp || tpDiuji.includes(tp)) && !icWujud.includes(p.ic);
-    });
-
-    if (bakiPesilat.length === 0) {
-      return alert("Tiada lagi pesilat tambahan bagi tali pinggang ini.");
-    }
-
-    select.innerHTML = bakiPesilat.map(p => `<option value="${p.ic}">${p.nama} (${p.gelanggang || '-'})</option>`).join('');
-    document.getElementById('modalTambah').classList.remove('hidden');
-  }
-
-  function tutupModalTambah() {
-    document.getElementById('modalTambah').classList.add('hidden');
-  }
-
-  function sahkanTambahPesilat() {
-    const icSelected = document.getElementById('selectExtraPesilat').value;
-    const pesilatObj = dbPesilat.find(p => p.ic === icSelected);
-
-    if (pesilatObj) {
-      activePesilatPenilaian.push({
-        ...pesilatObj,
-        markah: []
-      });
-      binaJadualMarkah();
-      tutupModalTambah();
-      simpanStateLokal(3);
-      hasUnsavedChanges = true;
-      simpanMarkahToGS(false);
-    }
-  }
-
-  async function simpanMarkahToGS(isManual = false) {
-    if (activePesilatPenilaian.length === 0) {
-      if (isManual) alert("Sila pastikan terdapat sekurang-kurangnya seorang pesilat dalam jadual.");
-      return;
-    }
-
-    if (isSaving) return;
-
-    isSaving = true;
-    paparStatusSave("🔄 Menyimpan...");
-
-    const rows = document.querySelectorAll('#bodyMarkah tr');
-    let dataMarkah = [];
-
-    rows.forEach((tr, pIdx) => {
-      const nama = tr.getAttribute('data-nama');
-      const ic = tr.getAttribute('data-ic');
-      const gelanggang = tr.getAttribute('data-gelanggang');
-
-      const inputs = tr.querySelectorAll(`input[type="number"]`);
-      let markahArray = [];
-      inputs.forEach(inp => markahArray.push(Number(inp.value) || 0));
-
-      const jumlah = Number(document.getElementById(`jumlah-${pIdx}`).innerText) || 0;
-
-      dataMarkah.push({
-        nama: nama,
-        ic: ic,
-        gelanggang: gelanggang,
-        markahArray: markahArray,
-        jumlah: jumlah
-      });
-    });
-
-    try {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'simpanMarkah',
-          sheetTitle: activeSheetTitle,
-          dataMarkah: dataMarkah
-        })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        hasUnsavedChanges = false;
-        simpanStateLokal(3);
-        paparStatusSave("☁️ Disimpan ke Sheet");
-        if (isManual) alert("✅ " + data.message);
-      } else {
-        paparStatusSave("⚠️ Ralat Simpan");
-        if (isManual) alert("Gagal simpan: " + data.message);
-      }
-    } catch (e) {
-      paparStatusSave("❌ Sambungan Terputus");
-      if (isManual) alert("Ralat semasa menyimpan markah.");
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  function paparStatusSave(mesej) {
-    const el = document.getElementById('statusSave');
-    el.classList.remove('hidden');
-    el.innerText = mesej;
-  }
-
-  async function kemaskiniLogPeranti(peringkatTekini) {
-    const penguji = document.getElementById('namaPenguji').value.trim();
-
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'updateDeviceLog',
-          deviceId: DEVICE_ID,
-          namaPenguji: penguji,
-          gelanggang: "-",
-          peringkat: peringkatTekini
-        })
-      });
-    } catch (e) {}
-  }
-
-  async function semakStatusPerantiDanNotif() {
-    try {
-      const resLog = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'updateDeviceLog',
-          deviceId: DEVICE_ID,
-          namaPenguji: document.getElementById('namaPenguji').value.trim(),
-          gelanggang: "-",
-          peringkat: activeSheetTitle ? `Menilai (${activeSheetTitle})` : "Aktif"
-        })
-      });
-      const dataLog = await resLog.json();
-
-      if (dataLog.forceReset) {
-        padamHistorySesi();
-        alert("⚠️ Sesi anda telah direset oleh Urus Setia.");
-        location.reload();
-      }
-
-      const resNotif = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
-      const dataNotif = await resNotif.json();
-
-      if (dataNotif.success && dataNotif.notif) {
-        if (dataNotif.notif.id !== lastNotifId) {
-          lastNotifId = dataNotif.notif.id;
-          document.getElementById('notifMesej').innerText = dataNotif.notif.message;
-          document.getElementById('notifBox').classList.remove('hidden');
+        if (data.success) {
+          CURRENT_SHEET_TITLE = data.sheetTitle;
+          document.getElementById('infoSheetBorang').innerText = "Sheet: " + CURRENT_SHEET_TITLE;
+          binaBorangMarkah(kriteriaObj);
+          tunjukLangkah(3);
+          hantarLogPenguji();
+        } else {
+          alert("Gagal mencipta sheet: " + data.message);
         }
+      } catch (e) {
+        alert("Ralat semasa mencipta borang ujian.");
+      } fontFinally {
+        hideLoading();
       }
-    } catch (e) {}
-  }
+    }
 
-  function tutupNotif() {
-    document.getElementById('notifBox').classList.add('hidden');
-  }
-</script>
+    function binaBorangMarkah(kriteriaObj) {
+      const container = document.getElementById('papanPenilaianContainer');
+      const kriteria = kriteriaObj.kriteria || [];
+      const maks = kriteriaObj.markahMaks || [];
+
+      container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
+        <div class="bg-slate-50 border rounded-2xl p-4 shadow-sm space-y-3">
+          <div class="flex justify-between items-center border-b pb-2">
+            <div>
+              <h3 class="font-bold text-gray-900 text-sm">${pIdx + 1}. ${p.nama}</h3>
+              <p class="text-xs text-gray-500">${p.gelanggang} | ${p.ic}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-gray-500 block">Jumlah</span>
+              <span id="jumlahMarkah_${pIdx}" class="text-lg font-black text-amber-600">0</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${kriteria.map((k, kIdx) => `
+              <div class="bg-white p-2.5 rounded-xl border space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-gray-700">
+                  <span>${k}</span>
+                  <span class="text-gray-400">Maks: ${maks[kIdx] || 0}</span>
+                </div>
+                <input type="number" 
+                       min="0" 
+                       max="${maks[kIdx] || 100}" 
+                       data-pidx="${pIdx}" 
+                       data-kidx="${kIdx}"
+                       oninput="kiraJumlahPesilat(${pIdx})"
+                       class="inputMarkah_${pIdx} w-full border rounded-lg p-2 text-center font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none" 
+                       placeholder="0">
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function kiraJumlahPesilat(pIdx) {
+      const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
+      let total = 0;
+      inputs.forEach(inp => {
+        total += Number(inp.value) || 0;
+      });
+      document.getElementById(`jumlahMarkah_${pIdx}`).innerText = total;
+    }
+
+    async function simpanMarkah(isFinal = false) {
+      showLoading(isFinal ? "Menghantar Markah Akhir..." : "Menyimpan Draf...");
+
+      const dataMarkah = PESILAT_TERPILIH.map((p, pIdx) => {
+        const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
+        const markahArr = Array.from(inputs).map(i => Number(i.value) || 0);
+        const jumlah = markahArr.reduce((a, b) => a + b, 0);
+
+        return {
+          nama: p.nama,
+          ic: p.ic,
+          gelanggang: p.gelanggang,
+          markahArray: markahArr,
+          jumlah: jumlah
+        };
+      });
+
+      try {
+        const payload = {
+          action: 'simpanMarkah',
+          sheetTitle: CURRENT_SHEET_TITLE,
+          dataMarkah: dataMarkah
+        };
+
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert(isFinal ? "✅ Markah berjaya dihantar sepenuhnya!" : "💾 Draf berjaya disimpan.");
+          if (isFinal) tunjukLangkah(1);
+        } else {
+          alert("Gagal simpan: " + data.message);
+        }
+      } catch(e) {
+        alert("Ralat semasa menyalin markah.");
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // PING LOGS & NOTIFIKASI
+    async function hantarLogPenguji() {
+      const penguji = document.getElementById('namaPenguji')?.value || '-';
+      const tp = document.getElementById('pilihTaliPinggang')?.value || '-';
+
+      const payload = {
+        action: 'updateDeviceLog',
+        deviceId: DEVICE_ID,
+        namaPenguji: penguji,
+        peringkat: tp,
+        pesilat: PESILAT_TERPILIH.map(p => p.nama)
+      };
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.forceReset) {
+          alert("⚠️ Sesi peranti ini telah di-reset oleh Urus Setia.");
+          window.location.reload();
+        }
+      } catch (e) {}
+    }
+
+    async function pingStatusAndNotif() {
+      try {
+        // 1. Semak Notifikasi
+        const resN = await fetch(`${APPS_SCRIPT_URL}?action=getNotif`);
+        const dataN = await resN.json();
+        if (dataN.success && dataN.notif && dataN.notif.id !== LAST_NOTIF_ID) {
+          LAST_NOTIF_ID = dataN.notif.id;
+          paparNotif(dataN.notif.message);
+        }
+        
+        // 2. Ping Log
+        await hantarLogPenguji();
+      } catch(e) {}
+    }
+
+    function paparNotif(msg) {
+      document.getElementById('notifMesej').innerText = msg;
+      document.getElementById('notifModal').classList.remove('hidden');
+    }
+
+    function tutupNotif() {
+      document.getElementById('notifModal').classList.add('hidden');
+    }
+  </script>
 </body>
 </html>
