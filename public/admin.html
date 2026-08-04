@@ -3,809 +3,235 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Ujian Kenaikan Bengkung / Tali Pinggang</title>
+  <title>Dashboard Urus Setia - Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .glass-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-    }
-    input[type=number]::-webkit-inner-spin-button, 
-    input[type=number]::-webkit-outer-spin-button { 
-      -webkit-appearance: none; 
-      margin: 0; 
-    }
-    input[type=number] {
-      -moz-appearance: textfield;
-    }
-  </style>
 </head>
-<body class="bg-slate-900 text-slate-800 min-h-screen font-sans flex flex-col justify-between">
+<body class="bg-gray-100 min-h-screen p-4 text-gray-800">
 
-  <!-- OVERLAY LOADING GLOBAL -->
-  <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white hidden">
-    <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-    <p id="loadingText" class="font-semibold text-lg animate-pulse text-amber-400">Memuatkan data...</p>
-  </div>
-
-  <!-- POP-UP NOTIFIKASI PENGUMUMAN -->
-  <div id="notifModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border-t-8 border-amber-500 text-center space-y-4">
-      <div class="text-4xl">📢</div>
-      <h3 class="text-xl font-bold text-gray-900">Pengumuman Urus Setia</h3>
-      <p id="notifMesej" class="text-gray-700 font-medium text-sm leading-relaxed"></p>
-      <button onclick="tutupNotif()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition">
-        Faham & Tutup
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- TAJUK DOKUMEN -->
+    <div class="bg-slate-800 text-white p-6 rounded-xl shadow-md flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold">DASHBOARD URUS SETIA</h1>
+        <p class="text-xs text-slate-300">Pemantauan Aktiviti Penguji & Kawalan Sesi Ujian</p>
+      </div>
+      <button onclick="muatLogAdmin()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold border border-slate-500 flex items-center gap-1 transition">
+        🔄 Refresh Data
       </button>
     </div>
-  </div>
 
-  <!-- MODAL PENGURUSAN PESILAT (TAMBAH / BUANG SAHAJA) -->
-  <div id="pesilatModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+    <!-- BORANG HANTAR PENGUMUMAN / NOTIFIKASI -->
+    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-amber-500 space-y-3">
+      <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <span>📢</span> Hantar Pengumuman Pop-Up Ke Penguji
+      </h2>
+      <div class="flex gap-2">
+        <input type="text" id="mesejNotif" placeholder="Tulis mesej pengumuman di sini..." class="w-full border p-2 rounded focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm">
+        <button onclick="hantarNotif()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded text-sm transition whitespace-nowrap">
+          Hantar
+        </button>
+      </div>
+    </div>
+
+    <!-- JADUAL LOG PERANTI PENGUJI -->
+    <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="text-lg font-bold text-slate-800">Tambah / Buang Pesilat Dalam Sesi</h3>
-        <button onclick="tutupModalPesilat()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
-      </div>
-      
-      <div>
-        <input type="text" id="searchPesilatInput" oninput="tapisPesilatModal()" placeholder="🔍 Cari Nama, Gelanggang atau No. IC..." class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm">
+        <h2 class="text-lg font-bold text-gray-800">📱 Log & Status Telefon Penguji (Real-Time)</h2>
+        <span class="text-xs text-gray-500">Dikemaskini automatik setiap 5 saat</span>
       </div>
 
-      <div id="modalPesilatContainer" class="flex-1 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50 min-h-[200px]"></div>
-
-      <div class="flex justify-between items-center pt-2 border-t">
-        <span class="text-xs text-gray-500">Tanda untuk tambah pesilat atau hilangkan tanda untuk buang dari sesi.</span>
-        <button onclick="kemaskiniPesilatSesi()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition text-sm">
-          Simpan & Kemaskini Borang
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="container mx-auto p-3 md:p-6 max-w-7xl flex-grow">
-    
-    <!-- HEADER -->
-    <header class="bg-slate-800 text-white p-5 rounded-2xl shadow-xl mb-6 flex justify-between items-center border border-slate-700">
-      <div>
-        <h1 class="text-xl md:text-2xl font-black text-amber-400 tracking-wide">SISTEM PENILAIAN SILAT</h1>
-        <p class="text-xs text-slate-400">Ujian Kenaikan Bengkung & Tali Pinggang</p>
-      </div>
-      <div class="text-right text-xs text-slate-300">
-        <div id="devIdTag" class="font-mono bg-slate-900 px-2 py-1 rounded text-amber-300 font-bold">ID: -</div>
-        <div id="autoSaveStatus" class="text-[10px] text-emerald-400 mt-1 font-semibold"></div>
-      </div>
-    </header>
-
-    <!-- KOTAK NOTIFIKASI DRAF TERSIMPAN DI HALAMAN UTAMA (JIKA ADA) -->
-    <div id="bannerDrafSesi" class="bg-amber-500/10 border-2 border-amber-500/40 p-4 rounded-2xl mb-6 hidden flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="space-y-1 text-center md:text-left">
-        <div class="font-bold text-amber-400 flex items-center justify-center md:justify-start gap-2">
-          <span>📂</span> Draf Sesi Ujian Belum Selesai Ditemui
-        </div>
-        <div id="infoDrafSesi" class="text-xs text-slate-300 font-mono"></div>
-      </div>
-      <div class="flex gap-2 w-full md:w-auto">
-        <button onclick="padamDrafSesi()" class="flex-1 md:flex-initial px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow">
-          🗑️ Padam Draf
-        </button>
-        <button onclick="teruskanSesiDraf()" class="flex-1 md:flex-initial px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shadow">
-          ▶️ Sambung Sesi
-        </button>
+      <div class="overflow-x-auto border rounded-lg">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="p-3 border">ID Peranti</th>
+              <th class="p-3 border">Penguji</th>
+              <th class="p-3 border">Lokasi / Peringkat</th>
+              <th class="p-3 border">Senarai Pesilat</th>
+              <th class="p-3 border">Kemaskini Terakhir</th>
+              <th class="p-3 border text-center">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="jadualLog">
+            <tr>
+              <td colspan="6" class="p-4 text-center text-gray-500">Memuatkan data peranti...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- LANGKAH 1 -->
-    <section id="step1" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200">
-      <div class="border-b pb-3 flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span class="bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span> 
-          Tetapan Ujian & Penguji
-        </h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Penguji</label>
-          <input type="text" id="namaPenguji" oninput="simpanSesiTempatan()" placeholder="Cth: Guru Azman" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Peringkat / Tali Pinggang</label>
-          <select id="pilihTaliPinggang" onchange="simpanSesiTempatan()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold bg-white">
-            <option value="">-- Pilih Tali Pinggang --</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Gelanggang / Kumpulan</label>
-          <input type="text" id="kumpulanUjian" oninput="simpanSesiTempatan()" placeholder="Cth: K1 / Pusat" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold">
-        </div>
-      </div>
-
-      <div class="flex justify-end pt-2">
-        <button onclick="keLangkah2()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
-          Seterusnya: Pilih Pesilat ➔
-        </button>
-      </div>
-    </section>
-
-    <!-- LANGKAH 2 -->
-    <section id="step2" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200 hidden">
-      <div class="border-b pb-3 flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span class="bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span> 
-          Pilih Senarai Pesilat
-        </h2>
-        <span id="labelTaliPinggangDipilih" class="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full"></span>
-      </div>
-
-      <div class="space-y-3">
-        <div class="flex justify-between items-center">
-          <p class="text-xs text-slate-500">Tanda pesilat yang mengambil ujian dalam sesi ini:</p>
-          <button onclick="toggleSemuaPesilat()" class="text-xs font-bold text-amber-600 hover:underline">Pilih Semua / Batal</button>
-        </div>
-        <div id="senaraiPesilatContainer" class="max-h-80 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50"></div>
-      </div>
-
-      <div class="flex justify-between pt-2">
-        <button onclick="tunjukLangkah(1)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-5 py-2.5 rounded-xl transition text-sm">
-          ⬅ Kembali
-        </button>
-        <button onclick="ciptaSesiUjian()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
-          Mula Penilaian ➔
-        </button>
-      </div>
-    </section>
-
-    <!-- LANGKAH 3 -->
-    <section id="step3" class="bg-white p-4 md:p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200 hidden">
-      <div class="border-b pb-3 flex justify-between items-center flex-wrap gap-2">
-        <div>
-          <h2 class="text-lg font-bold text-slate-800">Borang Markah Penilaian</h2>
-          <p id="infoSheetBorang" class="text-xs text-amber-600 font-bold font-mono"></p>
-        </div>
-        <div>
-          <button onclick="bukaModalPesilat()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow">
-            ➕/➖ Urus Pesilat
-          </button>
-        </div>
-      </div>
-
-      <div id="papanPenilaianContainer" class="space-y-3 overflow-x-auto pb-4"></div>
-
-      <div class="flex justify-end pt-4 border-t">
-        <button onclick="simpanMarkah()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
-          🔄 Kemaskini
-        </button>
-      </div>
-    </section>
-
   </div>
-
-  <footer class="text-center p-4 text-xs text-slate-500">
-    Sistem Penilaian Silat &copy; 2026 - Versi Web Apps
-  </footer>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwd4EqOWHjeqEW_wy477UWjvy_lTnXaMGVNqI0tz7bPYx1dCXkiLGoqxk2OOhV03Jpn2w/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwd4EqOWHjeqEW_wy477UWjvy_lTnXaMGVNqI0tz7bPYx1dCXkiLGoqxk2OOhV03Jpn2w/exec"; 
 
-    let DB_PESILAT = [];
-    let DB_TETAPAN = {};
-    let PESILAT_TERPILIH = [];
-    let CURRENT_SHEET_TITLE = "";
-    let LAST_NOTIF_ID = null;
-    let LANGKAH_SEMASA = 1;
-    let autoSaveTimer = null;
-    let DRAF_TERSIMPAM_DATA = null;
-    
-    let DEVICE_ID = localStorage.getItem('SILAT_DEV_ID');
-    if (!DEVICE_ID) {
-      DEVICE_ID = 'DEV_' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      localStorage.setItem('SILAT_DEV_ID', DEVICE_ID);
-    }
-
-    window.onload = async function() {
-      document.getElementById('devIdTag').innerText = "ID: " + DEVICE_ID;
-      await muatDataAwal();
-      semakDrafTempatan();
-      setInterval(pingStatusAndNotif, 5000);
+    window.onload = function() {
+      muatLogAdmin();
+      setInterval(muatLogAdmin, 5000);
     };
 
-    window.onpopstate = function(event) {
-      if (event.state && event.state.step) {
-        tunjukLangkah(event.state.step, false);
-      }
-    };
-
-    function showLoading(msg = "Memuatkan...") {
-      document.getElementById('loadingText').innerText = msg;
-      document.getElementById('loadingOverlay').classList.remove('hidden');
-    }
-
-    function hideLoading() {
-      document.getElementById('loadingOverlay').classList.add('hidden');
-    }
-
-    async function muatDataAwal() {
-      showLoading("Memuatkan Pangkalan Data...");
+    // TARIK LOG AKTIVITI TELEFON DARI GOOGLE APPS SCRIPT
+    async function muatLogAdmin() {
       try {
-        const res = await fetch(APPS_SCRIPT_URL);
+        const res = await fetch(APPS_SCRIPT_URL + "?action=getAdminLogs");
         const data = await res.json();
         
-        if (data.success) {
-          DB_PESILAT = data.pesilat || [];
-          DB_TETAPAN = data.tetapan || {};
-          isiDropdownTaliPinggang();
-        } else {
-          alert("Gagal muat data: " + data.message);
+        if (data.success && data.logs) {
+          paparLog(data.logs);
         }
       } catch (e) {
-        alert("Ralat Rangkaian semasa muat data.");
-      } finally {
-        hideLoading();
+        console.error("Gagal muat log admin", e);
       }
     }
 
-    function isiDropdownTaliPinggang() {
-      const select = document.getElementById('pilihTaliPinggang');
-      select.innerHTML = '<option value="">-- Pilih Tali Pinggang --</option>';
-      Object.keys(DB_TETAPAN).forEach(tp => {
-        const opt = document.createElement('option');
-        opt.value = tp;
-        opt.textContent = tp;
-        select.appendChild(opt);
-      });
-    }
+    function paparLog(logsObj) {
+      const tbody = document.getElementById('jadualLog');
+      const keys = Object.keys(logsObj);
 
-    function tunjukLangkah(no, pushHistory = true) {
-      LANGKAH_SEMASA = no;
-      [1, 2, 3].forEach(i => {
-        document.getElementById(`step${i}`).classList.toggle('hidden', i !== no);
-      });
-
-      if (pushHistory) {
-        history.pushState({ step: no }, `Langkah ${no}`, `?step=${no}`);
-      }
-
-      if (no === 3) {
-        mulaAutoSave();
-      } else {
-        hentikanAutoSave();
-      }
-
-      simpanSesiTempatan();
-    }
-
-    function keLangkah2() {
-      const penguji = document.getElementById('namaPenguji').value.trim();
-      const tp = document.getElementById('pilihTaliPinggang').value;
-
-      if (!penguji || !tp) {
-        return alert("Sila lengkapkan Nama Penguji dan Peringkat Tali Pinggang!");
-      }
-
-      document.getElementById('labelTaliPinggangDipilih').innerText = tp;
-      
-      const tapisPesilat = DB_PESILAT.filter(p => p.peringkat.toLowerCase() === tp.toLowerCase());
-      const container = document.getElementById('senaraiPesilatContainer');
-      
-      if (tapisPesilat.length === 0) {
-        container.innerHTML = `<p class="text-center text-sm text-gray-500 py-4">Tiada pesilat ditemui untuk peringkat ini.</p>`;
-      } else {
-        container.innerHTML = tapisPesilat.map((p) => {
-          const isChecked = PESILAT_TERPILIH.some(pt => pt.ic === p.ic) ? 'checked' : '';
-          return `
-            <label class="flex items-center gap-3 p-2.5 bg-white border rounded-lg hover:bg-amber-50 cursor-pointer transition">
-              <input type="checkbox" class="chkPesilat w-4 h-4 text-amber-600 rounded" value="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}" ${isChecked}>
-              <div class="text-xs">
-                <div class="font-bold text-gray-800">${p.nama}</div>
-                <div class="text-gray-500">${p.gelanggang} | IC: ${p.ic}</div>
-              </div>
-            </label>
-          `;
-        }).join('');
-      }
-
-      tunjukLangkah(2);
-      hantarLogPenguji();
-    }
-
-    function toggleSemuaPesilat() {
-      const chks = document.querySelectorAll('.chkPesilat');
-      const allChecked = Array.from(chks).every(c => c.checked);
-      chks.forEach(c => c.checked = !allChecked);
-    }
-
-    async function ciptaSesiUjian() {
-      const chks = document.querySelectorAll('.chkPesilat:checked');
-      if (chks.length === 0) return alert("Sila pilih sekurang-kurangnya seorang pesilat!");
-
-      PESILAT_TERPILIH = Array.from(chks).map(c => ({
-        ic: c.value,
-        nama: c.getAttribute('data-nama'),
-        gelanggang: c.getAttribute('data-gelanggang')
-      }));
-
-      const penguji = document.getElementById('namaPenguji').value.trim();
-      const tp = document.getElementById('pilihTaliPinggang').value;
-      const kump = document.getElementById('kumpulanUjian').value.trim();
-      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
-
-      showLoading("Mencipta Sheet Ujian...");
-
-      try {
-        const payload = {
-          action: 'createSheet',
-          penguji: penguji,
-          taliPinggang: tp,
-          kumpulan: kump,
-          kriteriaActive: kriteriaObj.kriteria,
-          pesilatPilihan: PESILAT_TERPILIH
-        };
-
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          CURRENT_SHEET_TITLE = data.sheetTitle;
-          document.getElementById('infoSheetBorang').innerText = "Sheet: " + CURRENT_SHEET_TITLE;
-          binaBorangMarkah(kriteriaObj);
-          tunjukLangkah(3);
-          hantarLogPenguji();
-        } else {
-          alert("Gagal mencipta sheet: " + data.message);
-        }
-      } catch (e) {
-        alert("Ralat semasa mencipta borang ujian: " + e.toString());
-      } finally {
-        hideLoading();
-      }
-    }
-
-    function binaBorangMarkah(kriteriaObj) {
-      const container = document.getElementById('papanPenilaianContainer');
-      const kriteria = kriteriaObj.kriteria || [];
-      const maks = kriteriaObj.markahMaks || [];
-
-      const markahSimpanan = {};
-      PESILAT_TERPILIH.forEach((p) => {
-        const pIdxLama = document.querySelector(`[data-ic="${p.ic}"]`)?.getAttribute('data-pidx');
-        if (pIdxLama !== undefined) {
-          const inputs = document.querySelectorAll(`.inputMarkah_${pIdxLama}`);
-          if (inputs.length > 0) {
-            markahSimpanan[p.ic] = Array.from(inputs).map(i => i.value);
-          }
-        }
-      });
-
-      container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
-        <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 w-full" data-ic="${p.ic}" data-pidx="${pIdx}">
-          
-          <div class="w-52 flex-shrink-0 border-r border-slate-200 pr-3 flex items-center justify-between text-xs">
-            <div class="space-y-1 pr-1 truncate">
-              <div class="flex items-center gap-1">
-                <span class="font-black text-amber-600">#${pIdx + 1}</span>
-                <div class="font-bold text-gray-900 leading-tight truncate" title="${p.nama}">${p.nama}</div>
-              </div>
-              <div class="text-[11px] text-slate-600 font-mono font-semibold truncate">
-                ${p.ic}
-              </div>
-              <div>
-                <span class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-semibold inline-block truncate max-w-full">
-                  ${p.gelanggang}
-                </span>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1 flex-shrink-0">
-              <button type="button" onclick="gerakPesilatLangkah3(${pIdx}, -1)" class="bg-slate-200 hover:bg-amber-500 hover:text-white px-2 py-1 rounded text-xs font-bold transition shadow-sm" title="Alih Ke Atas">⬆</button>
-              <button type="button" onclick="gerakPesilatLangkah3(${pIdx}, 1)" class="bg-slate-200 hover:bg-amber-500 hover:text-white px-2 py-1 rounded text-xs font-bold transition shadow-sm" title="Alih Ke Bawah">⬇</button>
-            </div>
-          </div>
-
-          <div class="flex-1 flex items-center gap-2 overflow-x-auto py-1">
-            ${kriteria.map((k, kIdx) => `
-              <div class="bg-white p-2 rounded-lg border border-slate-200 min-w-[90px] flex-1 text-center shadow-sm">
-                <div class="text-[11px] font-bold text-gray-700 leading-tight mb-1 whitespace-normal break-words h-8 flex items-center justify-center">
-                  ${k}
-                </div>
-                <div class="text-[10px] text-slate-400 mb-1 font-semibold">Max: ${maks[kIdx] || 100}</div>
-                <input type="number" 
-                       min="0" 
-                       max="${maks[kIdx] || 100}" 
-                       data-pidx="${pIdx}" 
-                       data-kidx="${kIdx}"
-                       data-max="${maks[kIdx] || 100}"
-                       oninput="semakDanKiraMarkah(this, ${pIdx})"
-                       class="inputMarkah_${pIdx} w-full border rounded p-1 text-center font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 focus:bg-white" 
-                       placeholder="0">
-              </div>
-            `).join('')}
-          </div>
-
-          <div class="w-20 flex-shrink-0 bg-amber-50 border border-amber-300 rounded-lg p-2 text-center shadow-inner">
-            <span class="text-[10px] font-bold text-amber-800 uppercase block">Jumlah</span>
-            <span id="jumlahMarkah_${pIdx}" class="text-lg font-black text-amber-600">0</span>
-          </div>
-
-        </div>
-      `).join('');
-
-      PESILAT_TERPILIH.forEach((p, pIdx) => {
-        if (markahSimpanan[p.ic]) {
-          const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-          inputs.forEach((inp, i) => {
-            if (markahSimpanan[p.ic][i] !== undefined) inp.value = markahSimpanan[p.ic][i];
-          });
-          kiraJumlahPesilat(pIdx);
-        }
-      });
-    }
-
-    function gerakPesilatLangkah3(index, arah) {
-      const newIndex = index + arah;
-      if (newIndex < 0 || newIndex >= PESILAT_TERPILIH.length) return;
-
-      const temp = PESILAT_TERPILIH[index];
-      PESILAT_TERPILIH[index] = PESILAT_TERPILIH[newIndex];
-      PESILAT_TERPILIH[newIndex] = temp;
-
-      const tp = document.getElementById('pilihTaliPinggang').value;
-      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
-
-      binaBorangMarkah(kriteriaObj);
-      simpanSesiTempatan();
-    }
-
-    function semakDanKiraMarkah(inputEl, pIdx) {
-      const maxVal = Number(inputEl.getAttribute('data-max')) || 100;
-      let val = Number(inputEl.value);
-
-      if (val > maxVal) {
-        alert(`Markah maksimum bagi kriteria ini ialah ${maxVal}!`);
-        inputEl.value = maxVal;
-      } else if (val < 0) {
-        inputEl.value = 0;
-      }
-
-      kiraJumlahPesilat(pIdx);
-    }
-
-    function kiraJumlahPesilat(pIdx) {
-      const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-      let total = 0;
-      inputs.forEach(inp => {
-        total += Number(inp.value) || 0;
-      });
-      const elem = document.getElementById(`jumlahMarkah_${pIdx}`);
-      if (elem) elem.innerText = total;
-      
-      simpanSesiTempatan();
-    }
-
-    function mulaAutoSave() {
-      hentikanAutoSave();
-      autoSaveTimer = setInterval(() => {
-        if (LANGKAH_SEMASA === 3 && CURRENT_SHEET_TITLE) {
-          simpanMarkahAutomatik();
-        }
-      }, 15000);
-    }
-
-    function hentikanAutoSave() {
-      if (autoSaveTimer) clearInterval(autoSaveTimer);
-    }
-
-    async function simpanMarkahAutomatik() {
-      const statusEl = document.getElementById('autoSaveStatus');
-      if (statusEl) statusEl.innerText = "🔄 Menyimpan...";
-
-      const dataMarkah = PESILAT_TERPILIH.map((p, pIdx) => {
-        const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-        const markahArr = Array.from(inputs).map(i => Number(i.value) || 0);
-        return {
-          nama: p.nama,
-          ic: p.ic,
-          gelanggang: p.gelanggang,
-          markahArray: markahArr,
-          jumlah: markahArr.reduce((a, b) => a + b, 0)
-        };
-      });
-
-      try {
-        const payload = {
-          action: 'simpanMarkah',
-          sheetTitle: CURRENT_SHEET_TITLE,
-          dataMarkah: dataMarkah
-        };
-
-        await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (statusEl) {
-          statusEl.innerText = "✅ Tersimpan (Auto)";
-          setTimeout(() => statusEl.innerText = "", 3000);
-        }
-      } catch (e) {
-        if (statusEl) statusEl.innerText = "⚠️ Auto-save gagal";
-      }
-    }
-
-    async function simpanMarkah() {
-      showLoading("Mengemas kini Markah...");
-
-      const dataMarkah = PESILAT_TERPILIH.map((p, pIdx) => {
-        const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-        const markahArr = Array.from(inputs).map(i => Number(i.value) || 0);
-        return {
-          nama: p.nama,
-          ic: p.ic,
-          gelanggang: p.gelanggang,
-          markahArray: markahArr,
-          jumlah: markahArr.reduce((a, b) => a + b, 0)
-        };
-      });
-
-      try {
-        const payload = {
-          action: 'simpanMarkah',
-          sheetTitle: CURRENT_SHEET_TITLE,
-          dataMarkah: dataMarkah
-        };
-
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          alert("🔄 Markah berjaya dikemas kini.");
-        } else {
-          alert("Gagal simpan: " + data.message);
-        }
-      } catch(e) {
-        alert("Ralat semasa menyimpan markah.");
-      } finally {
-        hideLoading();
-      }
-    }
-
-    function bukaModalPesilat() {
-      document.getElementById('searchPesilatInput').value = '';
-      tapisPesilatModal();
-      document.getElementById('pesilatModal').classList.remove('hidden');
-    }
-
-    function tutupModalPesilat() {
-      document.getElementById('pesilatModal').classList.add('hidden');
-    }
-
-    function tapisPesilatModal() {
-      const tp = document.getElementById('pilihTaliPinggang').value;
-      const keyword = document.getElementById('searchPesilatInput').value.toLowerCase().trim();
-      const container = document.getElementById('modalPesilatContainer');
-
-      const senarai = DB_PESILAT.filter(p => {
-        const samaPeringkat = p.peringkat.toLowerCase() === tp.toLowerCase();
-        const padanCarian = p.nama.toLowerCase().includes(keyword) || 
-                            p.gelanggang.toLowerCase().includes(keyword) || 
-                            p.ic.includes(keyword);
-        return samaPeringkat && padanCarian;
-      });
-
-      if (senarai.length === 0) {
-        container.innerHTML = `<p class="text-center text-xs text-gray-500 py-4">Tiada pesilat ditemui.</p>`;
+      if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Tiada aktiviti peranti direkodkan lagi.</td></tr>`;
         return;
       }
 
-      container.innerHTML = senarai.map(p => {
-        const isSelected = PESILAT_TERPILIH.some(pt => pt.ic === p.ic);
+      tbody.innerHTML = keys.map(devId => {
+        const item = logsObj[devId];
+        const isReset = item.status === 'RESET_REQUESTED';
+
+        // 1. RAWATAN & PENGELUARAN SENARAI PESILAT
+        let listPesilat = [];
+
+        if (item.pesilat) {
+          if (Array.isArray(item.pesilat)) {
+            listPesilat = item.pesilat.map(p => {
+              if (typeof p === 'object' && p !== null) return p.nama || JSON.stringify(p);
+              return String(p);
+            });
+          } else if (typeof item.pesilat === 'string' && item.pesilat.trim() !== '-' && item.pesilat.trim() !== '') {
+            if (item.pesilat.startsWith('[') || item.pesilat.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(item.pesilat);
+                if (Array.isArray(parsed)) {
+                  listPesilat = parsed.map(p => typeof p === 'object' ? (p.nama || JSON.stringify(p)) : p);
+                } else if (typeof parsed === 'object') {
+                  listPesilat = [parsed.nama || JSON.stringify(parsed)];
+                }
+              } catch(e) {
+                listPesilat = item.pesilat.split(',').map(s => s.trim());
+              }
+            } else {
+              listPesilat = item.pesilat.split(',').map(s => s.trim());
+            }
+          } else if (typeof item.pesilat === 'object' && item.pesilat !== null) {
+            listPesilat = [item.pesilat.nama || JSON.stringify(item.pesilat)];
+          }
+        }
+
+        listPesilat = listPesilat.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
+
+        // 2. PAPARAN HTML SENARAI PESILAT
+        let htmlPesilat = `<span class="text-gray-400 italic text-xs">- Tiada Pesilat -</span>`;
+
+        if (listPesilat.length > 0) {
+          htmlPesilat = `
+            <div class="max-h-32 overflow-y-auto space-y-1 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs min-w-[180px]">
+              ${listPesilat.map((nama, idx) => `
+                <div class="truncate text-slate-700 font-medium border-b border-gray-200 last:border-0 pb-0.5">
+                  ${idx + 1}. ${nama}
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
 
         return `
-          <div class="flex items-center justify-between p-2.5 bg-white border rounded-lg hover:bg-amber-50 gap-2">
-            <label class="flex items-center gap-3 cursor-pointer flex-1">
-              <input type="checkbox" onchange="togglePilihPesilatModal('${p.ic}', '${p.nama}', '${p.gelanggang}', this.checked)" class="w-4 h-4 text-amber-600 rounded" ${isSelected ? 'checked' : ''}>
-              <div class="text-xs">
-                <div class="font-bold text-gray-800">${p.nama}</div>
-                <div class="text-gray-500">${p.gelanggang} | IC: ${p.ic}</div>
+          <tr class="border-b hover:bg-slate-50">
+            <td class="p-3 border font-mono text-xs text-slate-600 align-top">${devId}</td>
+            <td class="p-3 border font-bold text-gray-800 align-top">${item.penguji || '-'}</td>
+            <td class="p-3 border align-top">
+              <span class="px-2 py-1 rounded text-xs font-semibold inline-block ${isReset ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'}">
+                ${item.peringkat || '-'}
+              </span>
+            </td>
+            <td class="p-3 border align-top max-w-xs">${htmlPesilat}</td>
+            <td class="p-3 border text-xs text-gray-500 align-top">${item.lastUpdate || '-'}</td>
+            <td class="p-3 border text-center align-top">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="resetSesiPeranti('${devId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
+                  Reset
+                </button>
+                <button onclick="padamLogPeranti('${devId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Padam Log Peranti Ini">
+                  🗑️ Padam
+                </button>
               </div>
-            </label>
-          </div>
+            </td>
+          </tr>
         `;
       }).join('');
     }
 
-    function togglePilihPesilatModal(ic, nama, gelanggang, isChecked) {
-      if (isChecked) {
-        if (!PESILAT_TERPILIH.some(p => p.ic === ic)) {
-          PESILAT_TERPILIH.push({ ic, nama, gelanggang });
-        }
-      } else {
-        PESILAT_TERPILIH = PESILAT_TERPILIH.filter(p => p.ic !== ic);
-      }
-      tapisPesilatModal();
-    }
+    async function hantarNotif() {
+      const mesej = document.getElementById('mesejNotif').value.trim();
+      if (!mesej) return alert("Sila masukkan mesej.");
 
-    function kemaskiniPesilatSesi() {
-      const tp = document.getElementById('pilihTaliPinggang').value;
-      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
-      
-      binaBorangMarkah(kriteriaObj);
-      tutupModalPesilat();
-      simpanSesiTempatan();
-    }
-
-    function simpanSesiTempatan() {
-      const draftData = {
-        langkah: LANGKAH_SEMASA,
-        sheetTitle: CURRENT_SHEET_TITLE,
-        penguji: document.getElementById('namaPenguji').value,
-        tp: document.getElementById('pilihTaliPinggang').value,
-        kump: document.getElementById('kumpulanUjian').value,
-        pesilat: PESILAT_TERPILIH,
-        inputs: {}
-      };
-
-      PESILAT_TERPILIH.forEach((p, pIdx) => {
-        const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-        draftData.inputs[p.ic] = Array.from(inputs).map(i => i.value);
-      });
-
-      localStorage.setItem('SILAT_DRAFT_SESSION', JSON.stringify(draftData));
-    }
-
-    function semakDrafTempatan() {
-      const saved = localStorage.getItem('SILAT_DRAFT_SESSION');
-      if (!saved) return;
-
-      try {
-        const draft = JSON.parse(saved);
-        if (draft && (draft.penguji || draft.tp || (draft.pesilat && draft.pesilat.length > 0))) {
-          DRAF_TERSIMPAM_DATA = draft;
-          
-          document.getElementById('infoDrafSesi').innerHTML = `
-            <span><b>Penguji:</b> ${draft.penguji || '-'}</span> | 
-            <span><b>Tali Pinggang:</b> ${draft.tp || '-'}</span> | 
-            <span><b>Bil. Pesilat:</b> ${draft.pesilat ? draft.pesilat.length : 0} orang</span>
-          `;
-          
-          document.getElementById('bannerDrafSesi').classList.remove('hidden');
-        }
-      } catch(e) {}
-    }
-
-    function teruskanSesiDraf() {
-      if (!DRAF_TERSIMPAM_DATA) return;
-      const draft = DRAF_TERSIMPAM_DATA;
-
-      if (draft.penguji) document.getElementById('namaPenguji').value = draft.penguji;
-      if (draft.tp) document.getElementById('pilihTaliPinggang').value = draft.tp;
-      if (draft.kump) document.getElementById('kumpulanUjian').value = draft.kump;
-      
-      if (draft.pesilat) PESILAT_TERPILIH = draft.pesilat;
-      if (draft.sheetTitle) {
-        CURRENT_SHEET_TITLE = draft.sheetTitle;
-        document.getElementById('infoSheetBorang').innerText = "Sheet: " + CURRENT_SHEET_TITLE;
-      }
-
-      if (draft.langkah && draft.langkah > 1) {
-        const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
-        if (draft.langkah === 3) {
-          binaBorangMarkah(kriteriaObj);
-        } else if (draft.langkah === 2) {
-          keLangkah2();
-        }
-
-        if (draft.inputs) {
-          PESILAT_TERPILIH.forEach((p, pIdx) => {
-            const vals = draft.inputs[p.ic] || draft.inputs[pIdx];
-            if (vals) {
-              const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-              inputs.forEach((inp, i) => {
-                if (vals[i] !== undefined) inp.value = vals[i];
-              });
-              kiraJumlahPesilat(pIdx);
-            }
-          });
-        }
-
-        tunjukLangkah(draft.langkah, false);
-      }
-
-      document.getElementById('bannerDrafSesi').classList.add('hidden');
-    }
-
-    function padamDrafSesi() {
-      localStorage.removeItem('SILAT_DRAFT_SESSION');
-      DRAF_TERSIMPAM_DATA = null;
-      document.getElementById('bannerDrafSesi').classList.add('hidden');
-      document.getElementById('namaPenguji').value = '';
-      document.getElementById('pilihTaliPinggang').value = '';
-      document.getElementById('kumpulanUjian').value = '';
-      PESILAT_TERPILIH = [];
-      CURRENT_SHEET_TITLE = "";
-      tunjukLangkah(1, false);
-    }
-
-    async function hantarLogPenguji() {
-      const penguji = document.getElementById('namaPenguji')?.value || '-';
-      const tp = document.getElementById('pilihTaliPinggang')?.value || '-';
-
-      const payload = {
-        action: 'updateDeviceLog',
-        deviceId: DEVICE_ID,
-        namaPenguji: penguji,
-        peringkat: tp,
-        pesilat: PESILAT_TERPILIH.map(p => p.nama)
-      };
+      const uniqueNotifId = "NOTIF_" + Date.now();
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ 
+            action: 'sendNotif', 
+            message: mesej,
+            id: uniqueNotifId 
+          })
         });
-        const data = await res.json();
-        
-        // Semak jika admin menekan butang reset atau padam log
-        if (data.forceReset || data.status === 'RESET_REQUESTED') {
-          localStorage.removeItem('SILAT_DRAFT_SESSION');
-          DRAF_TERSIMPAM_DATA = null;
-          document.getElementById('bannerDrafSesi').classList.add('hidden');
-          document.getElementById('namaPenguji').value = '';
-          document.getElementById('pilihTaliPinggang').value = '';
-          document.getElementById('kumpulanUjian').value = '';
-          PESILAT_TERPILIH = [];
-          CURRENT_SHEET_TITLE = "";
-          tunjukLangkah(1, false);
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ " + (result.message || "Pengumuman berjaya dihantar."));
+          document.getElementById('mesejNotif').value = "";
         }
-      } catch (e) {}
-    }
-
-    async function pingStatusAndNotif() {
-      try {
-        const resN = await fetch(`${APPS_SCRIPT_URL}?action=getNotif`);
-        const dataN = await resN.json();
-        
-        if (dataN.success && dataN.notif && dataN.notif.message) {
-          const currentNotifId = dataN.notif.id || dataN.notif.message;
-          const closedNotifId = localStorage.getItem('CLOSED_NOTIF_ID');
-
-          if (currentNotifId !== closedNotifId) {
-            LAST_NOTIF_ID = currentNotifId;
-            paparNotif(dataN.notif.message);
-          }
-        }
-        await hantarLogPenguji();
-      } catch(e) {}
-    }
-
-    function paparNotif(msg) {
-      document.getElementById('notifMesej').innerText = msg;
-      document.getElementById('notifModal').classList.remove('hidden');
-    }
-
-    function tutupNotif() {
-      if (LAST_NOTIF_ID) {
-        localStorage.setItem('CLOSED_NOTIF_ID', LAST_NOTIF_ID);
+      } catch(e) {
+        alert("Gagal menghantar notifikasi.");
       }
-      document.getElementById('notifModal').classList.add('hidden');
+    }
+
+    async function resetSesiPeranti(devId) {
+      if (!confirm(`Pasti mahu mereset sesi peranti [${devId}]? Penguji akan dikembalikan ke Skrin Utama.`)) return;
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'resetDevice', deviceId: devId, resetType: 'session' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Arahan reset dihantar.");
+          muatLogAdmin();
+        }
+      } catch(e) {
+        alert("Gagal mereset peranti.");
+      }
+    }
+
+    async function padamLogPeranti(devId) {
+      if (!confirm(`Adakah anda pasti mahu memadam log peranti [${devId}]?`)) return;
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'deleteDeviceLog', deviceId: devId })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ " + (result.message || "Log peranti berjaya dipadam."));
+          muatLogAdmin();
+        } else {
+          alert("Gagal: " + (result.message || "Gagal memadam log peranti."));
+        }
+      } catch(e) {
+        alert("Ralat semasa memadam log peranti.");
+      }
     }
   </script>
 </body>
