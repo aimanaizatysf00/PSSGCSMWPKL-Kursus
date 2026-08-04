@@ -818,7 +818,8 @@
         deviceId: DEVICE_ID,
         namaPenguji: penguji,
         peringkat: tp,
-        pesilat: PESILAT_TERPILIH.map(p => p.nama)
+        // Hantar keseluruhan objek pesilat agar status starred, IC & markah dapat dikesan Admin
+        pesilat: PESILAT_TERPILIH
       };
 
       try {
