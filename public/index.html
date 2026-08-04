@@ -8,7 +8,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-3 md:p-6 text-gray-800">
 
-  <div class="max-w-4xl mx-auto space-y-6">
+  <div class="max-w-5xl mx-auto space-y-6">
 
     <!-- HEADER / POP-UP NOTIFIKASI URUS SETIA -->
     <div id="notifBox" class="hidden bg-amber-500 text-white p-4 rounded-xl shadow-lg border-2 border-amber-600 flex justify-between items-center animate-bounce">
@@ -71,7 +71,7 @@
       </button>
     </div>
 
-    <!-- LANGKAH 2: PILIH PESILAT (HANYA MEMAPARKAN LAJUR E YANG TEPAT) -->
+    <!-- LANGKAH 2: PILIH PESILAT -->
     <div id="langkah2" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
       <div class="border-b pb-3 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -101,16 +101,21 @@
       </div>
     </div>
 
-    <!-- LANGKAH 3: BORANG PENILAIAN MARKAH -->
+    <!-- LANGKAH 3: BORANG PENILAIAN MARKAH & PENGURUSAN PESILAT -->
     <div id="langkah3" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-      <div class="border-b pb-3 flex justify-between items-center">
+      <div class="border-b pb-3 flex justify-between items-center flex-wrap gap-2">
         <div>
           <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
             <span class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded-full">3</span>
-            Kemas Masuk Markah
+            Kemas Masuk Markah Pesilat
           </h2>
           <p id="subTajukSheet" class="text-xs text-slate-500 mt-1 font-mono"></p>
         </div>
+
+        <!-- FUNGSI TAMBAH PESILAT BAHARU TERUS KE JADUAL -->
+        <button onclick="bukaModalTambahPesilat()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1">
+          ➕ Tambah Pesilat
+        </button>
       </div>
 
       <!-- JADUAL INPUT MARKAH -->
@@ -137,6 +142,25 @@
 
   </div>
 
+  <!-- MODAL POPUP: TAMBAH PESILAT LEPASAN/EKSTRA -->
+  <div id="modalTambah" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl border">
+      <h3 class="font-bold text-slate-800 text-base border-b pb-2">➕ Tambah Pesilat Tambahan</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Pesilat Lain (Tali Pinggang Sama)</label>
+          <select id="selectExtraPesilat" class="w-full border p-2 rounded-lg text-xs bg-slate-50">
+            <!-- Senarai dinamik -->
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-2 justify-end pt-2">
+        <button onclick="tutupModalTambah()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Batal</button>
+        <button onclick="sahkanTambahPesilat()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-bold">Tambah Ke Jadual</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7zD44tmDEBrhKI_ozUugBTaCoImiSPyrGV12dN8Y_br8vhkIZ8ZKZcnKfENh45k_Ojw/exec";
 
@@ -147,14 +171,15 @@
     let dbTetapan = {};
     let activeSheetTitle = "";
     let activeKriteria = [];
+    let activePesilatPenilaian = []; // Senarai pesilat aktif dalam jadual Langkah 3
     let lastNotifId = 0;
 
     window.onload = function() {
       muatDataAsas();
-      setInterval(semakStatusPerantiDanNotif, 4000); // Semak reset & notif setiap 4 saat
+      setInterval(semakStatusPerantiDanNotif, 4000);
     };
 
-    // 1. AMBIL DATA PESILAT & TETAPAN DARI GOOGLE APPS SCRIPT
+    // 1. MUAT DATA ASAS
     async function muatDataAsas() {
       try {
         const res = await fetch(APPS_SCRIPT_URL);
@@ -164,7 +189,6 @@
           dbPesilat = data.pesilat || [];
           dbTetapan = data.tetapan || {};
 
-          // Isi Dropdown Tali Pinggang dari Tab Tetapan
           const selectTP = document.getElementById('pilihanTaliPinggang');
           selectTP.innerHTML = '<option value="">-- Pilih Tali Pinggang --</option>';
 
@@ -177,54 +201,45 @@
       }
     }
 
-    // 2. TAPIS SENARAI PESILAT (PADANAN TEPAT & PEMBERSIHAN STRUKTUR TEXT)
-function tapisPesilat() {
-  const selectElem = document.getElementById('pilihanTaliPinggang');
-  const tpDipilih = selectElem.value.trim().toLowerCase();
-  const container = document.getElementById('senaraiPesilatContainer');
+    // 2. TAPIS PESILAT UNTUK LANGKAH 2
+    function tapisPesilat() {
+      const selectElem = document.getElementById('pilihanTaliPinggang');
+      const tpDipilih = selectElem.value.trim().toLowerCase();
+      const container = document.getElementById('senaraiPesilatContainer');
 
-  // Bersihkan kontena terlebih dahulu
-  container.innerHTML = '';
+      container.innerHTML = '';
 
-  if (!tpDipilih) {
-    container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
-    return;
-  }
+      if (!tpDipilih) {
+        container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
+        return;
+      }
 
-  // TAPISAN TEPAT: Menapis 'peringkat' (Lajur E: Tali Pinggang Diuji)
-  const pesilatTersaring = dbPesilat.filter(p => {
-    // Bersihkan sebarang aksara khas, ruang kosong lebihan & tukar ke huruf kecil
-    const tpDiuji = String(p.peringkat || '')
-      .trim()
-      .replace(/\s+/g, ' ')
-      .toLowerCase();
-    
-    return tpDiuji === tpDipilih;
-  });
+      const pesilatTersaring = dbPesilat.filter(p => {
+        const tpDiuji = String(p.peringkat || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        return tpDiuji === tpDipilih;
+      });
 
-  if (pesilatTersaring.length === 0) {
-    container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"</p>`;
-    return;
-  }
+      if (pesilatTersaring.length === 0) {
+        container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"</p>`;
+        return;
+      }
 
-  // Paparkan pesilat yang BENAR-BENAR padan sahaja
-  container.innerHTML = pesilatTersaring.map((p) => `
-    <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
-      <input type="checkbox" name="chkPesilat" value="${p.ic}" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
-      <div class="overflow-hidden">
-        <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
-        <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang}</span></p>
-      </div>
-    </label>
-  `).join('');
-}
-    
+      container.innerHTML = pesilatTersaring.map((p) => `
+        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
+          <input type="checkbox" name="chkPesilat" value="${p.ic}" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
+          <div class="overflow-hidden">
+            <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
+            <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang}</span></p>
+          </div>
+        </label>
+      `).join('');
+    }
+
     function tandaSemua(status) {
       const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
       checkboxes.forEach(cb => cb.checked = status);
     }
 
-    // NAVIGASI LANGKAH 1 -> LANGKAH 2
     function keLangkah2() {
       const penguji = document.getElementById('namaPenguji').value.trim();
       const gelanggang = document.getElementById('namaGelanggang').value.trim();
@@ -236,6 +251,7 @@ function tapisPesilat() {
 
       document.getElementById('badgeTP').innerText = tp;
       document.getElementById('langkah1').classList.add('hidden');
+      document.getElementById('langkah3').classList.add('hidden');
       document.getElementById('langkah2').classList.remove('hidden');
 
       kemaskiniLogPeranti("Langkah 2: Pilih Pesilat");
@@ -249,7 +265,7 @@ function tapisPesilat() {
       kemaskiniLogPeranti("Halaman Utama");
     }
 
-    // 3. JANA SHEET DAN BORANG MARKAH
+    // 3. JANA SHEET DAN PERIAPAN LANGKAH 3
     async function janaBorangPenilaian() {
       const penguji = document.getElementById('namaPenguji').value.trim();
       const tp = document.getElementById('pilihanTaliPinggang').value.trim();
@@ -261,11 +277,14 @@ function tapisPesilat() {
         return alert("Sila tandakan sekurang-kurangnya seorang pesilat!");
       }
 
-      const pesilatDipilih = dbPesilat.filter(p => chkSelected.includes(p.ic));
-      const kriteriaActive = dbTetapan[tp] ? dbTetapan[tp].kriteria : [];
-      activeKriteria = kriteriaActive;
+      // Simpan senarai pesilat pilihan ke tatasusunan memori
+      activePesilatPenilaian = dbPesilat.filter(p => chkSelected.includes(p.ic)).map(p => ({
+        ...p,
+        markah: [] // untuk simpankan markah sementara jika susunan diubah
+      }));
 
-      // Hantar arahan cipta sheet ke Google Apps Script
+      activeKriteria = dbTetapan[tp] ? dbTetapan[tp].kriteria : [];
+
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
@@ -275,15 +294,16 @@ function tapisPesilat() {
             penguji: penguji,
             taliPinggang: tp,
             kumpulan: kumpulan,
-            kriteriaActive: kriteriaActive,
-            pesilatPilihan: pesilatDipilih
+            kriteriaActive: activeKriteria,
+            pesilatPilihan: activePesilatPenilaian
           })
         });
 
         const data = await res.json();
         if (data.success) {
           activeSheetTitle = data.sheetTitle;
-          binaJadualMarkah(pesilatDipilih, kriteriaActive, dbTetapan[tp]?.markahMaks || []);
+          
+          binaJadualMarkah();
           
           document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
           document.getElementById('langkah2').classList.add('hidden');
@@ -294,46 +314,75 @@ function tapisPesilat() {
           alert("Gagal cipta sheet: " + data.message);
         }
       } catch (e) {
-        alert("Ralat semasa cipataan sheet ujian.");
+        alert("Ralat semasa ciptaan sheet ujian.");
       }
     }
 
-    // BINA JADUAL INPUT MARKAH
-    function binaJadualMarkah(pesilatList, kriteriaList, markahMaksList) {
+    // BINA/KEMASKINI JADUAL LANGKAH 3 (LENGKAP FUNGSI SUSUN & BUANG)
+    function binaJadualMarkah() {
+      const tp = document.getElementById('pilihanTaliPinggang').value.trim();
+      const markahMaksList = dbTetapan[tp]?.markahMaks || [];
+
       const thead = document.getElementById('headMarkah');
       const tbody = document.getElementById('bodyMarkah');
 
       let headHTML = `<tr>
+        <th class="p-2 border text-center w-12">Susun</th>
         <th class="p-2 border">Nama Pesilat</th>
         <th class="p-2 border">Gelanggang</th>`;
 
-      kriteriaList.forEach((k, idx) => {
+      activeKriteria.forEach((k, idx) => {
         const max = markahMaksList[idx] || 10;
         headHTML += `<th class="p-2 border text-center">${k}<br><span class="text-[9px] text-amber-300">(Maks: ${max})</span></th>`;
       });
 
-      headHTML += `<th class="p-2 border text-center">Jumlah</th></tr>`;
+      headHTML += `<th class="p-2 border text-center">Jumlah</th>
+        <th class="p-2 border text-center w-10">Tindakan</th></tr>`;
       thead.innerHTML = headHTML;
 
       let bodyHTML = "";
-      pesilatList.forEach((p, pIdx) => {
+      activePesilatPenilaian.forEach((p, pIdx) => {
         bodyHTML += `<tr data-ic="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}">
+          <!-- BUTTON SUSUN (UP/DOWN) -->
+          <td class="p-1 border text-center whitespace-nowrap">
+            <button onclick="ubahSusunan(${pIdx}, -1)" ${pIdx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔼</button>
+            <button onclick="ubahSusunan(${pIdx}, 1)" ${pIdx === activePesilatPenilaian.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔽</button>
+          </td>
           <td class="p-2 border font-bold text-slate-800">${p.nama}<br><span class="text-[9px] text-slate-400 font-normal">${p.ic}</span></td>
           <td class="p-2 border text-slate-600">${p.gelanggang}</td>`;
 
-        kriteriaList.forEach((_, kIdx) => {
+        activeKriteria.forEach((_, kIdx) => {
           const max = markahMaksList[kIdx] || 10;
+          const val = p.markah && p.markah[kIdx] !== undefined ? p.markah[kIdx] : 0;
           bodyHTML += `<td class="p-1 border text-center">
-            <input type="number" min="0" max="${max}" value="0" onchange="kiraJumlah(${pIdx})" class="inp-markah-${pIdx} w-12 text-center border p-1 rounded font-bold focus:ring-1 focus:ring-amber-500">
+            <input type="number" min="0" max="${max}" value="${val}" onchange="simpanNilaiInput(${pIdx}, ${kIdx}, this.value)" class="inp-markah-${pIdx} w-12 text-center border p-1 rounded font-bold focus:ring-1 focus:ring-amber-500">
           </td>`;
         });
 
-        bodyHTML += `<td class="p-2 border text-center font-black text-amber-700 text-sm" id="jumlah-${pIdx}">0</td></tr>`;
+        bodyHTML += `<td class="p-2 border text-center font-black text-amber-700 text-sm" id="jumlah-${pIdx}">0</td>
+          <!-- BUTTON BUANG PESILAT -->
+          <td class="p-1 border text-center">
+            <button onclick="buangPesilat(${pIdx})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Buang pesilat ini">🗑️</button>
+          </td>
+        </tr>`;
       });
 
       tbody.innerHTML = bodyHTML;
+
+      // Kemaskini jumlah keseluruhan untuk semua pesilat
+      activePesilatPenilaian.forEach((_, pIdx) => kiraJumlah(pIdx));
     }
 
+    // SIMPAN VALUE TERKINI KE MEMORI APABILA PENGUJI TAIP MARKAH
+    function simpanNilaiInput(pIdx, kIdx, value) {
+      if (!activePesilatPenilaian[pIdx].markah) {
+        activePesilatPenilaian[pIdx].markah = [];
+      }
+      activePesilatPenilaian[pIdx].markah[kIdx] = Number(value) || 0;
+      kiraJumlah(pIdx);
+    }
+
+    // KIRA JUMLAH MARKAH
     function kiraJumlah(pIdx) {
       const inputs = document.querySelectorAll(`.inp-markah-${pIdx}`);
       let total = 0;
@@ -341,8 +390,73 @@ function tapisPesilat() {
       document.getElementById(`jumlah-${pIdx}`).innerText = total;
     }
 
+    // FUNGSI SUSUN NAIK/TURUN PESILAT
+    function ubahSusunan(index, arah) {
+      const barisBaru = index + arah;
+      if (barisBaru < 0 || barisBaru >= activePesilatPenilaian.length) return;
+
+      // Tukar kedudukan dalam array
+      const temp = activePesilatPenilaian[index];
+      activePesilatPenilaian[index] = activePesilatPenilaian[barisBaru];
+      activePesilatPenilaian[barisBaru] = temp;
+
+      // Render semula jadual
+      binaJadualMarkah();
+    }
+
+    // FUNGSI BUANG PESILAT
+    function buangPesilat(index) {
+      const nama = activePesilatPenilaian[index].nama;
+      if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
+        activePesilatPenilaian.splice(index, 1);
+        binaJadualMarkah();
+      }
+    }
+
+    // FUNGSI BUAT TAMBAH PESILAT BAHARU
+    function bukaModalTambahPesilat() {
+      const tp = document.getElementById('pilihanTaliPinggang').value.trim().toLowerCase();
+      const select = document.getElementById('selectExtraPesilat');
+
+      // Tapis pesilat yang belum ada dalam jadual pemarkahan
+      const icWujud = activePesilatPenilaian.map(p => p.ic);
+      const bakiPesilat = dbPesilat.filter(p => {
+        const tpDiuji = String(p.peringkat || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        return tpDiuji === tp && !icWujud.includes(p.ic);
+      });
+
+      if (bakiPesilat.length === 0) {
+        return alert("Tiada lagi pesilat tambahan bagi tali pinggang ini.");
+      }
+
+      select.innerHTML = bakiPesilat.map(p => `<option value="${p.ic}">${p.nama} (${p.gelanggang})</option>`).join('');
+      document.getElementById('modalTambah').classList.remove('hidden');
+    }
+
+    function tutupModalTambah() {
+      document.getElementById('modalTambah').classList.add('hidden');
+    }
+
+    function sahkanTambahPesilat() {
+      const icSelected = document.getElementById('selectExtraPesilat').value;
+      const pesilatObj = dbPesilat.find(p => p.ic === icSelected);
+
+      if (pesilatObj) {
+        activePesilatPenilaian.push({
+          ...pesilatObj,
+          markah: []
+        });
+        binaJadualMarkah();
+        tutupModalTambah();
+      }
+    }
+
     // 4. SIMPAN MARKAH KE GOOGLE APPS SCRIPT
     async function simpanMarkahToGS() {
+      if (activePesilatPenilaian.length === 0) {
+        return alert("Sila pastikan terdapat sekurang-kurangnya seorang pesilat dalam jadual.");
+      }
+
       const rows = document.querySelectorAll('#bodyMarkah tr');
       let dataMarkah = [];
 
@@ -388,7 +502,7 @@ function tapisPesilat() {
       }
     }
 
-    // 5. KEMASKINI LOG & DENGAR ARAHAN RESET / NOTIFIKASI
+    // 5. HELPER LOG & NOTIF
     async function kemaskiniLogPeranti(peringkatTekini) {
       const penguji = document.getElementById('namaPenguji').value.trim();
       const gelanggang = document.getElementById('namaGelanggang').value.trim();
@@ -410,7 +524,6 @@ function tapisPesilat() {
 
     async function semakStatusPerantiDanNotif() {
       try {
-        // A. Semak log peranti
         const resLog = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -424,13 +537,11 @@ function tapisPesilat() {
         });
         const dataLog = await resLog.json();
 
-        // Jika Admin tekan "Reset Peranti" dari Dashboard
         if (dataLog.forceReset) {
           alert("⚠️ Sesi anda telah direset oleh Urus Setia.");
           location.reload();
         }
 
-        // B. Semak Notifikasi Pop-up
         const resNotif = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
         const dataNotif = await resNotif.json();
 
