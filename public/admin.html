@@ -100,6 +100,30 @@
       }
     }
 
+    // FUNGSI BANTUAN MENERJEMAH FORMAT PESILAT DARI LOG
+    function rawatSenaraiPesilat(pesilatData) {
+      let listPesilat = [];
+      if (pesilatData) {
+        if (Array.isArray(pesilatData)) {
+          listPesilat = pesilatData;
+        } else if (typeof pesilatData === 'string' && pesilatData.trim() !== '-' && pesilatData.trim() !== '') {
+          try {
+            const parsed = JSON.parse(pesilatData);
+            if (Array.isArray(parsed)) {
+              listPesilat = parsed;
+            } else if (typeof parsed === 'object') {
+              listPesilat = [parsed];
+            }
+          } catch(e) {
+            listPesilat = pesilatData.split(',').map(s => ({ nama: s.trim() }));
+          }
+        } else if (typeof pesilatData === 'object' && pesilatData !== null) {
+          listPesilat = [pesilatData];
+        }
+      }
+      return listPesilat;
+    }
+
     // FUNGSI MEMAPARKAN KOTAK PESILAT TERBAIK
     function paparPesilatTerbaik(logsObj) {
       const container = document.getElementById('senaraiPesilatTerbaikContainer');
@@ -111,15 +135,15 @@
         const item = logsObj[devId];
         let listPesilat = rawatSenaraiPesilat(item.pesilat);
 
-        // Cari pesilat yang bertanda starred === true
         listPesilat.forEach(p => {
-          if (p && typeof p === 'object' && p.starred === true) {
+          // Menyokong pelbagai bentuk penandaan star (boolean atau string 'true' / 1)
+          if (p && typeof p === 'object' && (p.starred === true || p.starred === 'true' || p.starred === 1)) {
             adaPesilatStar = true;
             const namaPenguji = item.penguji || 'Tanpa Nama';
             const peringkat = item.peringkat || '-';
             const namaPesilat = p.nama || '-';
             const icPesilat = p.ic || '-';
-            const gelanggangPesilat = p.gelanggang || '-';
+            const gelanggangPesilat = p.gelanggang || item.kumpulan || '-';
             const jumlahMarkah = p.jumlah !== undefined ? p.jumlah : '-';
 
             htmlContent += `
@@ -147,31 +171,6 @@
       }
     }
 
-    // FUNGSI BANTUAN MENERJEMAH FORMAT PESILAT DARI LOG
-    function rawatSenaraiPesilat(pesilatData) {
-      let listPesilat = [];
-      if (pesilatData) {
-        if (Array.isArray(pesilatData)) {
-          listPesilat = pesilatData;
-        } else if (typeof pesilatData === 'string' && pesilatData.trim() !== '-' && pesilatData.trim() !== '') {
-          try {
-            const parsed = JSON.parse(pesilatData);
-            if (Array.isArray(parsed)) {
-              listPesilat = parsed;
-            } else if (typeof parsed === 'object') {
-              listPesilat = [parsed];
-            }
-          } catch(e) {
-            // Kalau string biasa
-            listPesilat = pesilatData.split(',').map(s => ({ nama: s.trim() }));
-          }
-        } else if (typeof pesilatData === 'object' && pesilatData !== null) {
-          listPesilat = [pesilatData];
-        }
-      }
-      return listPesilat;
-    }
-
     function paparLog(logsObj) {
       const tbody = document.getElementById('jadualLog');
       const keys = Object.keys(logsObj);
@@ -186,7 +185,13 @@
         const isReset = item.status === 'RESET_REQUESTED';
 
         let listPesilatObj = rawatSenaraiPesilat(item.pesilat);
-        let listNama = listPesilatObj.map(p => typeof p === 'object' && p !== null ? (p.nama + (p.starred ? ' ⭐' : '')) : String(p));
+        let listNama = listPesilatObj.map(p => {
+          if (typeof p === 'object' && p !== null) {
+            const isStarred = p.starred === true || p.starred === 'true' || p.starred === 1;
+            return (p.nama || '-') + (isStarred ? ' ⭐' : '');
+          }
+          return String(p);
+        });
         listNama = listNama.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
 
         let htmlPesilat = `<span class="text-gray-400 italic text-xs">- Tiada Pesilat -</span>`;
