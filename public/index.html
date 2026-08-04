@@ -243,7 +243,7 @@
         }
       } catch (e) {
         alert("Ralat Rangkaian semasa muat data.");
-      } font-semibold {
+      } finally {
         hideLoading();
       }
     }
@@ -375,7 +375,6 @@
       const kriteria = kriteriaObj.kriteria || [];
       const maks = kriteriaObj.markahMaks || [];
 
-      // Simpan input markah sedia ada mengikut IC pesilat
       const markahSimpanan = {};
       PESILAT_TERPILIH.forEach((p) => {
         const pIdxLama = document.querySelector(`[data-ic="${p.ic}"]`)?.getAttribute('data-pidx');
@@ -390,7 +389,6 @@
       container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
         <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 w-full" data-ic="${p.ic}" data-pidx="${pIdx}">
           
-          <!-- MAKLUMAT PESILAT & BUTANG ALIH GILIRAN -->
           <div class="w-52 flex-shrink-0 border-r border-slate-200 pr-3 flex items-center justify-between text-xs">
             <div class="space-y-1 pr-1 truncate">
               <div class="flex items-center gap-1">
@@ -407,14 +405,12 @@
               </div>
             </div>
 
-            <!-- BUTANG NAIK / TURUN KAD PESILAT -->
             <div class="flex flex-col gap-1 flex-shrink-0">
               <button type="button" onclick="gerakPesilatLangkah3(${pIdx}, -1)" class="bg-slate-200 hover:bg-amber-500 hover:text-white px-2 py-1 rounded text-xs font-bold transition shadow-sm" title="Alih Ke Atas">⬆</button>
               <button type="button" onclick="gerakPesilatLangkah3(${pIdx}, 1)" class="bg-slate-200 hover:bg-amber-500 hover:text-white px-2 py-1 rounded text-xs font-bold transition shadow-sm" title="Alih Ke Bawah">⬇</button>
             </div>
           </div>
 
-          <!-- KOTAK MARKAH -->
           <div class="flex-1 flex items-center gap-2 overflow-x-auto py-1">
             ${kriteria.map((k, kIdx) => `
               <div class="bg-white p-2 rounded-lg border border-slate-200 min-w-[90px] flex-1 text-center shadow-sm">
@@ -435,7 +431,6 @@
             `).join('')}
           </div>
 
-          <!-- JUMLAH MARKAH -->
           <div class="w-20 flex-shrink-0 bg-amber-50 border border-amber-300 rounded-lg p-2 text-center shadow-inner">
             <span class="text-[10px] font-bold text-amber-800 uppercase block">Jumlah</span>
             <span id="jumlahMarkah_${pIdx}" class="text-lg font-black text-amber-600">0</span>
@@ -444,7 +439,6 @@
         </div>
       `).join('');
 
-      // Kembalikan semula nilai markah selepas render
       PESILAT_TERPILIH.forEach((p, pIdx) => {
         if (markahSimpanan[p.ic]) {
           const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
@@ -677,7 +671,6 @@
       localStorage.setItem('SILAT_DRAFT_SESSION', JSON.stringify(draftData));
     }
 
-    /* PENGURUSAN REFRESH / SAMBUNG SESI */
     function semakDrafTempatan() {
       const saved = localStorage.getItem('SILAT_DRAFT_SESSION');
       if (!saved) return;
