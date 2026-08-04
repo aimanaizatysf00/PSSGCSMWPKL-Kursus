@@ -10,7 +10,6 @@
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
     }
-    /* Sembunyikan spinner input number */
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { 
       -webkit-appearance: none; 
@@ -41,7 +40,7 @@
     </div>
   </div>
 
-  <!-- MODAL PENGURUSAN PESILAT (TAMBAH / BUANG) -->
+  <!-- MODAL PENGURUSAN PESILAT -->
   <div id="pesilatModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center border-b pb-3">
@@ -49,15 +48,11 @@
         <button onclick="tutupModalPesilat()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
       </div>
       
-      <!-- KOTAK CARIAN -->
       <div>
         <input type="text" id="searchPesilatInput" oninput="tapisPesilatModal()" placeholder="🔍 Cari Nama, Gelanggang atau No. IC..." class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm">
       </div>
 
-      <!-- SENARAI PESILAT CARIAN -->
-      <div id="modalPesilatContainer" class="flex-1 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50 min-h-[200px]">
-        <!-- Dijana Dinamik -->
-      </div>
+      <div id="modalPesilatContainer" class="flex-1 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50 min-h-[200px]"></div>
 
       <div class="flex justify-end pt-2 border-t">
         <button onclick="kemaskiniPesilatSesi()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition text-sm">
@@ -81,7 +76,7 @@
       </div>
     </header>
 
-    <!-- LANGKAH 1: PILIHAN PENGUJI & PERINGKAT -->
+    <!-- LANGKAH 1 -->
     <section id="step1" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200">
       <div class="border-b pb-3 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -114,7 +109,7 @@
       </div>
     </section>
 
-    <!-- LANGKAH 2: PILIH PESILAT -->
+    <!-- LANGKAH 2 -->
     <section id="step2" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200 hidden">
       <div class="border-b pb-3 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -129,9 +124,7 @@
           <p class="text-xs text-slate-500">Tanda pesilat yang mengambil ujian dalam sesi ini:</p>
           <button onclick="toggleSemuaPesilat()" class="text-xs font-bold text-amber-600 hover:underline">Pilih Semua / Batal</button>
         </div>
-        <div id="senaraiPesilatContainer" class="max-h-80 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50">
-          <!-- Senarai Pesilat Dijana Automatik -->
-        </div>
+        <div id="senaraiPesilatContainer" class="max-h-80 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50"></div>
       </div>
 
       <div class="flex justify-between pt-2">
@@ -144,7 +137,7 @@
       </div>
     </section>
 
-    <!-- LANGKAH 3: BORANG PENILAIAN MARKAH -->
+    <!-- LANGKAH 3 -->
     <section id="step3" class="bg-white p-4 md:p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200 hidden">
       <div class="border-b pb-3 flex justify-between items-center flex-wrap gap-2">
         <div>
@@ -161,10 +154,7 @@
         </div>
       </div>
 
-      <!-- Container Markah (Penambahan Lebar & Maklumat Penuh) -->
-      <div id="papanPenilaianContainer" class="space-y-3 overflow-x-auto pb-4">
-        <!-- Borang Markah Dijana Secara Dinamik -->
-      </div>
+      <div id="papanPenilaianContainer" class="space-y-3 overflow-x-auto pb-4"></div>
 
       <div class="flex justify-between pt-4 border-t gap-2 flex-wrap">
         <button onclick="tunjukLangkah(2)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-5 py-2.5 rounded-xl transition text-sm">
@@ -198,7 +188,6 @@
     let LANGKAH_SEMASA = 1;
     let autoSaveTimer = null;
     
-    // Jana/Ambil ID Peranti Unik
     let DEVICE_ID = localStorage.getItem('SILAT_DEV_ID');
     if (!DEVICE_ID) {
       DEVICE_ID = 'DEV_' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -209,12 +198,9 @@
       document.getElementById('devIdTag').innerText = "ID: " + DEVICE_ID;
       await muatDataAwal();
       pulihkanSesiTempatan();
-      
-      // Ping logs & notifikasi setiap 5 saat
       setInterval(pingStatusAndNotif, 5000);
     };
 
-    // PENGURUSAN HISTORY & PAGE REFRESH
     window.onpopstate = function(event) {
       if (event.state && event.state.step) {
         tunjukLangkah(event.state.step, false);
@@ -245,7 +231,7 @@
         }
       } catch (e) {
         alert("Ralat Rangkaian semasa muat data.");
-      } finally {
+      } font-semibold
         hideLoading();
       }
     }
@@ -279,7 +265,6 @@
         history.pushState({ step: no }, `Langkah ${no}`, `?step=${no}`);
       }
 
-      // Mulakan Auto-Save jika di Langkah 3
       if (no === 3) {
         mulaAutoSave();
       } else {
@@ -342,7 +327,7 @@
       const penguji = document.getElementById('namaPenguji').value.trim();
       const tp = document.getElementById('pilihTaliPinggang').value;
       const kump = document.getElementById('kumpulanUjian').value.trim();
-      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: [], markahMaks: [] };
+      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
 
       showLoading("Mencipta Sheet Ujian...");
 
@@ -356,8 +341,12 @@
           pesilatPilihan: PESILAT_TERPILIH
         };
 
+        // DIBAIKI: Ditetapkan header text/plain untuk mengelakkan ralat CORS
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -372,19 +361,17 @@
           alert("Gagal mencipta sheet: " + data.message);
         }
       } catch (e) {
-        alert("Ralat semasa mencipta borang ujian.");
+        alert("Ralat semasa mencipta borang ujian: " + e.toString());
       } finally {
         hideLoading();
       }
     }
 
-    /* BINA BORANG MARKAH DENGAN MAKLUMAT TERPERINCI & KRITERIA PENUH */
     function binaBorangMarkah(kriteriaObj) {
       const container = document.getElementById('papanPenilaianContainer');
       const kriteria = kriteriaObj.kriteria || [];
       const maks = kriteriaObj.markahMaks || [];
 
-      // Simpan markah sedia ada untuk dipulihkan jika bilangan pesilat dikemaskini
       const markahSimpanan = {};
       PESILAT_TERPILIH.forEach((_, pIdx) => {
         const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
@@ -396,7 +383,6 @@
       container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
         <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 min-w-[850px]">
           
-          <!-- MAKLUMAT PESILAT (Bil / Nama / IC / Gelanggang) -->
           <div class="w-80 flex-shrink-0 border-r border-slate-200 pr-3 grid grid-cols-12 gap-1 text-xs">
             <div class="col-span-1 font-black text-amber-600 flex items-center">#${pIdx + 1}</div>
             <div class="col-span-11 space-y-1">
@@ -408,7 +394,7 @@
             </div>
           </div>
 
-          <!-- KRITERIA MARKAH (Teks Dipaparkan Penuh Tanpa Truncate) -->
+          <!-- DIBAIKI: Ralat data-kidx diselaraskan kepada data-kidx dengan variable kIdx -->
           <div class="flex-1 flex items-center gap-2 overflow-x-auto py-1">
             ${kriteria.map((k, kIdx) => `
               <div class="bg-white p-2 rounded-lg border border-slate-200 min-w-[130px] flex-1 text-center shadow-sm">
@@ -420,7 +406,7 @@
                        min="0" 
                        max="${maks[kIdx] || 100}" 
                        data-pidx="${pIdx}" 
-                       data-kidx="${kidx}"
+                       data-kidx="${kIdx}"
                        data-max="${maks[kIdx] || 100}"
                        oninput="semakDanKiraMarkah(this, ${pIdx})"
                        class="inputMarkah_${pIdx} w-full border rounded p-1 text-center font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 focus:bg-white" 
@@ -429,7 +415,6 @@
             `).join('')}
           </div>
 
-          <!-- JUMLAH MARKAH -->
           <div class="w-24 flex-shrink-0 bg-amber-50 border border-amber-300 rounded-lg p-2 text-center shadow-inner">
             <span class="text-[10px] font-bold text-amber-800 uppercase block">Jumlah</span>
             <span id="jumlahMarkah_${pIdx}" class="text-lg font-black text-amber-600">0</span>
@@ -438,7 +423,6 @@
         </div>
       `).join('');
 
-      // Pulihkan semula nilai markah jika ada
       PESILAT_TERPILIH.forEach((_, pIdx) => {
         if (markahSimpanan[pIdx]) {
           const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
@@ -450,7 +434,6 @@
       });
     }
 
-    // PENGAWALAN HASIL MARKAH (HAD MAKSIMUM)
     function semakDanKiraMarkah(inputEl, pIdx) {
       const maxVal = Number(inputEl.getAttribute('data-max')) || 100;
       let val = Number(inputEl.value);
@@ -477,14 +460,13 @@
       simpanSesiTempatan();
     }
 
-    // AUTO-UPDATE DATA KE SHEET SETIAP 15 SAAT
     function mulaAutoSave() {
       hentikanAutoSave();
       autoSaveTimer = setInterval(() => {
         if (LANGKAH_SEMASA === 3 && CURRENT_SHEET_TITLE) {
           simpanMarkahAutomatik();
         }
-      }, 15000); // 15 Saat
+      }, 15000);
     }
 
     function hentikanAutoSave() {
@@ -516,6 +498,9 @@
 
         await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
           body: JSON.stringify(payload)
         });
 
@@ -552,6 +537,9 @@
 
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -573,7 +561,6 @@
       }
     }
 
-    // PENGURUSAN PESILAT DALAM MODAL (TAMBAH/BUANG & SEARCH)
     function bukaModalPesilat() {
       document.getElementById('searchPesilatInput').value = '';
       tapisPesilatModal();
@@ -625,14 +612,13 @@
       }));
 
       const tp = document.getElementById('pilihTaliPinggang').value;
-      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: [], markahMaks: [] };
+      const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
       
       binaBorangMarkah(kriteriaObj);
       tutupModalPesilat();
       simpanSesiTempatan();
     }
 
-    // SIMPAN & PULIHKAN SESI TEMPATAN (SOKONGAN REFRESH HALAMAN)
     function simpanSesiTempatan() {
       const draftData = {
         langkah: LANGKAH_SEMASA,
@@ -670,14 +656,13 @@
           }
 
           if (draft.langkah && draft.langkah > 1) {
-            const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: [], markahMaks: [] };
+            const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
             if (draft.langkah === 3) {
               binaBorangMarkah(kriteriaObj);
             } else if (draft.langkah === 2) {
               keLangkah2();
             }
 
-            // Isikan semula markah jika ada
             if (draft.inputs) {
               Object.keys(draft.inputs).forEach(pIdx => {
                 const vals = draft.inputs[pIdx];
@@ -695,7 +680,6 @@
       } catch(e) {}
     }
 
-    // LOGS & NOTIFIKASI PENGUMUMAN UNIK
     async function hantarLogPenguji() {
       const penguji = document.getElementById('namaPenguji')?.value || '-';
       const tp = document.getElementById('pilihTaliPinggang')?.value || '-';
@@ -711,6 +695,9 @@
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
