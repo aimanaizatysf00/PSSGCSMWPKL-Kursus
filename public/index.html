@@ -13,6 +13,12 @@
     .animate-bounce-short {
       animation: bounceShort 0.5s ease-in-out 2;
     }
+    /* Style visual semasa elemen ditarik (Drag & Drop) */
+    .dragging {
+      opacity: 0.5;
+      background-color: #fef2f2 !important;
+      border: 2px dashed #ef4444 !important;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 text-gray-800">
@@ -40,33 +46,33 @@
       <h1 class="text-2xl font-bold text-center text-red-700 mb-6">SISTEM PEMARKAHAN SILAT</h1>
 
       <!-- LANGKAH 1 -->
-<div id="step-1" class="space-y-4">
-  <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
-  <div>
-    <label class="block text-sm font-medium text-gray-700">Nama Penguji</label>
-    <input type="text" id="namaPenguji" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
-  </div>
-  <div>
-    <label class="block text-sm font-medium text-gray-700">Tali Pinggang / Peringkat</label>
-    <select id="taliPinggang" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" onchange="simpanDrafUjian()">
-      <option value="">Memuatkan senarai tali pinggang...</option>
-    </select>
-  </div>
-  <div>
-    <label class="block text-sm font-medium text-gray-700">Kumpulan</label>
-    <input 
-      type="number" 
-      id="kumpulan" 
-      min="1"
-      inputmode="numeric"
-      class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" 
-      value="1" 
-      placeholder="Masukkan nombor kumpulan (cth: 1)"
-      oninput="this.value = this.value.replace(/[^0-9]/g, ''); simpanDrafUjian();"
-    >
-  </div>
-  <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
-</div>
+      <div id="step-1" class="space-y-4">
+        <h2 class="text-lg font-bold border-b pb-2">Langkah 1: Maklumat Ujian</h2>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nama Penguji</label>
+          <input type="text" id="namaPenguji" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Masukkan nama anda" oninput="simpanDrafUjian()">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Tali Pinggang / Peringkat</label>
+          <select id="taliPinggang" class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" onchange="simpanDrafUjian()">
+            <option value="">Memuatkan senarai tali pinggang...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Kumpulan</label>
+          <input 
+            type="number" 
+            id="kumpulan" 
+            min="1"
+            inputmode="numeric"
+            class="w-full border border-gray-300 p-2 rounded mt-1 focus:ring-2 focus:ring-red-500 focus:outline-none" 
+            value="1" 
+            placeholder="Masukkan nombor kumpulan (cth: 1)"
+            oninput="this.value = this.value.replace(/[^0-9]/g, ''); simpanDrafUjian();"
+          >
+        </div>
+        <button type="button" onclick="bukaModal(1)" class="w-full bg-red-600 text-white py-2 rounded font-semibold hover:bg-red-700 transition">Seterusnya ➔</button>
+      </div>
 
       <!-- LANGKAH 2 -->
       <div id="step-2" class="space-y-4 hidden">
@@ -95,8 +101,11 @@
           <div>Kumpulan: <span id="dispKumpulan" class="text-red-600 font-semibold"></span></div>
         </div>
 
-        <div class="flex justify-end">
-          <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1 transition">
+        <div class="flex justify-between items-center bg-blue-50 p-2 rounded border border-blue-200">
+          <div class="text-xs text-blue-800 font-medium flex items-center gap-1">
+            💡 <span>Gunakan icon <b>⠿</b> untuk tarik atau butang <b>⬆/⬇</b> untuk susun pasangan pesilat.</span>
+          </div>
+          <button type="button" onclick="bukaModalTambahPesilat()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs sm:text-sm font-semibold hover:bg-blue-700 flex items-center gap-1 transition shrink-0">
             ➕ Tambah Pesilat
           </button>
         </div>
@@ -153,7 +162,6 @@
   </div>
 
 <script>
-    // PASTIKAN URL WEB APP ANDA TEPAT
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkNmUpprug8orPs51ANr4K-svt0KekRJlhkB_C_y_ZV0dT2yLyGh52xPCWt5yw-OgzxA/exec"; 
 
     let currentStep = 1;
@@ -164,7 +172,7 @@
     let activeKriteria = [];
     let activeMarkahMaks = [];
     let lastNotifId = localStorage.getItem("LAST_NOTIF_ID") || "";
-    let isDataChanged = false; // Flag untuk menandakan ada perubahan markah baharu
+    let isDataChanged = false; 
 
     const DRAFT_KEY = "SILAT_EXAM_DRAFT_V1";
 
@@ -222,16 +230,14 @@
 
           semakPengumuman();
           
-          // Interval 8 saat: Semak Pengumuman & Status Log Peranti
           setInterval(() => {
             semakPengumuman();
             hantarLogAktiviti();
           }, 8000);
 
-          // Interval 60 saat (1 Minit): Auto-Save Markah Ke Google Sheet
           setInterval(() => {
             autoSaveKeGoogleSheet();
-          }, 60000); // 60000ms = 1 minit
+          }, 60000); 
 
         } else {
           alert('Gagal muat tetapan: ' + result.message);
@@ -525,6 +531,7 @@
       document.getElementById('dispKumpulan').innerText = data.kumpulan;
 
       let headHtml = `<tr>
+        <th class="p-2 border text-center text-gray-700 w-12">Susun</th>
         <th class="p-2 border text-gray-700">Nama</th>
         <th class="p-2 border text-gray-700">Gelanggang</th>`;
       
@@ -540,7 +547,18 @@
 
       const tbody = document.getElementById('jadualPemarkahan');
       tbody.innerHTML = data.pesilatPilihan.map((p, i) => {
-        let rowHtml = `<tr class="border-b hover:bg-gray-50"><td class="p-2 border font-medium text-gray-800">${p.nama}</td><td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>`;
+        let rowHtml = `<tr draggable="true" data-index="${i}" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragend="handleDragEnd(event)" class="border-b hover:bg-gray-50 transition">
+          <td class="p-1 border text-center select-none">
+            <div class="flex items-center justify-center gap-1">
+              <span class="cursor-grab active:cursor-grabbing text-gray-400 text-base font-bold" title="Tarik untuk susun">⠿</span>
+              <div class="flex flex-col text-[10px]">
+                <button type="button" onclick="ubahKedudukan(${i}, ${i-1})" ${i === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-red-600 font-bold"'}>⬆</button>
+                <button type="button" onclick="ubahKedudukan(${i}, ${i+1})" ${i === data.pesilatPilihan.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-red-600 font-bold"'}>⬇</button>
+              </div>
+            </div>
+          </td>
+          <td class="p-2 border font-medium text-gray-800">${p.nama}</td>
+          <td class="p-2 border text-xs text-gray-600">${p.gelanggang}</td>`;
         
         activeKriteria.forEach((_, j) => {
           rowHtml += `<td class="p-1 border text-center"><input type="number" min="0" max="${activeMarkahMaks[j] || 100}" value="0" class="w-16 text-center border rounded p-1 focus:ring-1 focus:ring-red-500 focus:outline-none" oninput="kiraTotal(${i})" id="m_${i}_${j}"></td>`;
@@ -586,6 +604,64 @@
       simpanDrafUjian();
     }
 
+    // --- FUNGSI SUSUNAN MANUALLY & DRAG AND DROP ---
+    let dragSrcIndex = null;
+
+    function handleDragStart(e) {
+      const tr = e.target.closest('tr');
+      dragSrcIndex = Number(tr.getAttribute('data-index'));
+      tr.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragOver(e) {
+      if (e.preventDefault) e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDrop(e) {
+      if (e.stopPropagation) e.stopPropagation();
+      const tr = e.target.closest('tr');
+      if (!tr) return false;
+      const targetIndex = Number(tr.getAttribute('data-index'));
+
+      if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+        ubahKedudukan(dragSrcIndex, targetIndex);
+      }
+      return false;
+    }
+
+    function handleDragEnd(e) {
+      const tr = e.target.closest('tr');
+      if (tr) tr.classList.remove('dragging');
+      document.querySelectorAll('#jadualPemarkahan tr').forEach(row => row.classList.remove('dragging'));
+    }
+
+    function ubahKedudukan(fromIndex, toIndex) {
+      if (toIndex < 0 || toIndex >= pesilatPilihan.length) return;
+
+      // 1. Simpan markah semasa sebelum susunan ditukar
+      const markahSemasa = pesilatPilihan.map((_, i) => {
+        return activeKriteria.map((_, j) => {
+          const el = document.getElementById(`m_${i}_${j}`);
+          return el ? Number(el.value || 0) : 0;
+        });
+      });
+
+      // 2. Tukar kedudukan dalam array pesilatPilihan
+      const movedPesilat = pesilatPilihan.splice(fromIndex, 1)[0];
+      pesilatPilihan.splice(toIndex, 0, movedPesilat);
+
+      // 3. Tukar kedudukan dalam array markahSemasa
+      const movedMarkah = markahSemasa.splice(fromIndex, 1)[0];
+      markahSemasa.splice(toIndex, 0, movedMarkah);
+
+      // 4. Kemaskini semula paparan jadual dengan markah yang tepat
+      kemaskiniPaparanJadual(markahSemasa);
+      isDataChanged = true;
+    }
+
     function buangPesilat(index) {
       if (pesilatPilihan.length <= 1) {
         alert("Sekurang-kurangnya seorang pesilat mesti kekal.");
@@ -610,10 +686,10 @@
       if (totalEl) totalEl.innerText = sum;
       
       simpanDrafUjian();
-      if (setChangeFlag) isDataChanged = true; // Tandakan bahawa data telah berubah
+      if (setChangeFlag) isDataChanged = true; 
     }
 
-    // --- MODAL TAMBAH PESILAT (BERADA DI LANGKAH 3) ---
+    // --- MODAL TAMBAH PESILAT ---
     function bukaModalTambahPesilat() {
       document.getElementById('tambahPesilatModal').classList.remove('hidden');
       paparSenaraiTambahMaster(dataMasterPesilat);
@@ -630,7 +706,6 @@
         return;
       }
 
-      // Tapis pesilat yang BELUM ada dalam pesilatPilihan
       const available = list.filter(m => !pesilatPilihan.some(p => p.ic === m.ic));
 
       if (available.length === 0) {
@@ -672,7 +747,6 @@
 
     // --- FUNGSI AUTO-SAVE KE GOOGLE SHEET ---
     async function autoSaveKeGoogleSheet() {
-      // Hanya berjalan jika berada di Langkah 3, ada tajuk sheet dan ADA PERUBAHAN MARKAH
       if (currentStep === 3 && currentSheetTitle && isDataChanged) {
         const statusEl = document.getElementById('autoSaveStatus');
         if (statusEl) {
@@ -680,13 +754,13 @@
           statusEl.className = "text-xs font-semibold text-amber-600 flex items-center gap-1 bg-amber-50 px-2 py-1 rounded border border-amber-200";
         }
 
-        const success = await simpanMarkahAkhir(true); // true = dipanggil secara automatik (tanpa alert pop-up)
+        const success = await simpanMarkahAkhir(true); 
 
         if (statusEl) {
           if (success) {
             statusEl.innerHTML = `✅ Tersimpan automatik (${new Date().toLocaleTimeString('ms-MY', {hour: '2-digit', minute:'2-digit'})})`;
             statusEl.className = "text-xs font-semibold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded border border-emerald-200";
-            isDataChanged = false; // Reset balik bendera perubahan
+            isDataChanged = false; 
           } else {
             statusEl.innerHTML = `⚠️ Auto-save gagal`;
             statusEl.className = "text-xs font-semibold text-red-600 flex items-center gap-1 bg-red-50 px-2 py-1 rounded border border-red-200";
