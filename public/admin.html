@@ -114,10 +114,10 @@
             <td class="p-3 border text-xs text-gray-500">${item.lastUpdate}</td>
             <td class="p-3 border text-center">
               <div class="flex items-center justify-center gap-1.5">
-                <button onclick="resetSesiPeranti('${item.deviceId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
+                <button onclick="resetSesiPeranti('${devId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
                   Reset
                 </button>
-                <button onclick="padamLogPeranti('${item.deviceId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Padam Log Peranti Ini">
+                <button onclick="padamLogPeranti('${devId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Padam Log Peranti Ini">
                   🗑️ Padam
                 </button>
               </div>
@@ -132,7 +132,6 @@
       const mesej = document.getElementById('mesejNotif').value.trim();
       if (!mesej) return alert("Sila masukkan mesej.");
 
-      // Jana ID Unik berasaskan timestamp masa hantar
       const uniqueNotifId = "NOTIF_" + Date.now();
 
       try {
@@ -187,10 +186,10 @@
         });
         const result = await res.json();
         if (result.success) {
-          alert("✅ Log peranti berjaya dipadam.");
+          alert("✅ " + (result.message || "Log peranti berjaya dipadam."));
           muatLogAdmin();
         } else {
-          alert("Gagal memadam log peranti.");
+          alert("Gagal: " + (result.message || "Gagal memadam log peranti."));
         }
       } catch(e) {
         alert("Ralat semasa memadam log peranti.");
