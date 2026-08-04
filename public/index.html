@@ -172,11 +172,21 @@
     let activeKriteria = [];
     let activePesilatPenilaian = []; 
     let lastNotifId = 0;
-    let autoSaveTimer = null;
+
+    // SISTEM AUTO-SAVE BERKALA (15 SAAT)
+    let hasUnsavedChanges = false;
+    let isSaving = false;
 
     window.onload = function() {
       muatDataAsas();
       setInterval(semakStatusPerantiDanNotif, 4000);
+
+      // PEMASA AUTO-SAVE: Berjalan secara automatik setiap 15 saat
+      setInterval(() => {
+        if (hasUnsavedChanges && !isSaving && activeSheetTitle) {
+          simpanMarkahToGS(false);
+        }
+      }, 15000); // 15000ms = 15 Saat
     };
 
     // 1. MUAT DATA ASAS
@@ -376,12 +386,9 @@
       activePesilatPenilaian[pIdx].markah[kIdx] = Number(value) || 0;
       kiraJumlah(pIdx);
 
-      // PICU AUTO-SAVE: Tunggu 1.5 saat selepas taipan terakhir untuk mengemas kini Google Sheet
-      paparStatusSave("⏳ Taipan dikesan...");
-      clearTimeout(autoSaveTimer);
-      autoSaveTimer = setTimeout(() => {
-        simpanMarkahToGS(false);
-      }, 15000);
+      // Tanda bahawa terdapat perubahan yang belum disimpan
+      hasUnsavedChanges = true;
+      paparStatusSave("⏳ Ada perubahan (Auto-save dalam 15s)");
     }
 
     function kiraJumlah(pIdx) {
@@ -400,6 +407,7 @@
       activePesilatPenilaian[barisBaru] = temp;
 
       binaJadualMarkah();
+      hasUnsavedChanges = true;
       simpanMarkahToGS(false);
     }
 
@@ -408,6 +416,7 @@
       if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
         activePesilatPenilaian.splice(index, 1);
         binaJadualMarkah();
+        hasUnsavedChanges = true;
         simpanMarkahToGS(false);
       }
     }
@@ -445,18 +454,23 @@
         });
         binaJadualMarkah();
         tutupModalTambah();
+        hasUnsavedChanges = true;
         simpanMarkahToGS(false);
       }
     }
 
-    // 4. SIMPAN MARKAH KE GOOGLE APPS SCRIPT (BERSIFAT MANUAL ATAU AUTO)
+    // 4. SIMPAN MARKAH KE GOOGLE APPS SCRIPT
     async function simpanMarkahToGS(isManual = false) {
       if (activePesilatPenilaian.length === 0) {
         if (isManual) alert("Sila pastikan terdapat sekurang-kurangnya seorang pesilat dalam jadual.");
         return;
       }
 
-      // ID PERBAIKAN: #bodyMarkah menggantikan #bodyBodyMarkah
+      if (isSaving) return; // Mengelakkan pertindihan simpanan jika sedang menyimpan
+
+      isSaving = true;
+      paparStatusSave("🔄 Menyimpan...");
+
       const rows = document.querySelectorAll('#bodyMarkah tr');
       let dataMarkah = [];
 
@@ -480,8 +494,6 @@
         });
       });
 
-      paparStatusSave("🔄 Menyimpan...");
-
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
@@ -495,6 +507,7 @@
 
         const data = await res.json();
         if (data.success) {
+          hasUnsavedChanges = false; // Reset balik status sebab dah berjaya simpan
           paparStatusSave("☁️ Disimpan ke Sheet");
           if (isManual) alert("✅ " + data.message);
         } else {
@@ -504,6 +517,8 @@
       } catch (e) {
         paparStatusSave("❌ Sambungan Terputus");
         if (isManual) alert("Ralat semasa menyimpan markah.");
+      } finally {
+        isSaving = false;
       }
     }
 
