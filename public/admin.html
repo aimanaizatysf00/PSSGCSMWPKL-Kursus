@@ -38,11 +38,11 @@
     <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-yellow-500 space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <span>⭐</span> Pesilat Terbaik (Pilihan Penguji)
+          <span>⭐</span> Pesilat Terbaik Pilihan Penguji
         </h2>
-        <span class="text-xs text-gray-500">Senarai pesilat cemerlang yang diberi penarafan bintang</span>
+        <span class="text-xs text-gray-500">Disusun mengikut Tali Pinggang & Kumpulan</span>
       </div>
-      <div id="senaraiPesilatTerbaikContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div id="senaraiPesilatTerbaikContainer" class="space-y-6">
         <div class="text-sm text-gray-500 italic p-2">Memuatkan senarai pesilat terbaik...</div>
       </div>
     </div>
@@ -78,7 +78,7 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxakV95da1mrOAxFHBRewLy5ZPgV0QZeNmG3KjP8_TTkHBqYWtGk6p_r78lQQzJlKbNg/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysOxQE845mpraY0ynWwboVG3qPLUXFqlaYUhVJ6_LMQxD_xUk467NB7eukGIJfUENqEw/exec"; 
 
     window.onload = function() {
       muatLogAdmin();
@@ -125,46 +125,94 @@
     function paparPesilatTerbaik(logsObj) {
       const container = document.getElementById('senaraiPesilatTerbaikContainer');
       const keys = Object.keys(logsObj);
+      
+      let groupedData = {};
       let adaPesilatStar = false;
-      let htmlContent = "";
 
       keys.forEach(devId => {
         const item = logsObj[devId];
+        const peringkat = item.peringkat || 'Lain-lain';
+        const namaPenguji = item.penguji || 'Tanpa Nama';
+        const kumpulan = item.kumpulan || 'Kumpulan Utama';
         let listPesilat = rawatSenaraiPesilat(item.pesilat);
 
         listPesilat.forEach(p => {
           if (p && typeof p === 'object' && (p.starred === true || p.starred === 'true' || p.starred == 1)) {
             adaPesilatStar = true;
-            const namaPenguji = item.penguji || 'Tanpa Nama';
-            const peringkat = item.peringkat || '-';
-            const namaPesilat = p.nama || '-';
-            const icPesilat = p.ic || '-';
-            const gelanggangPesilat = p.gelanggang || item.kumpulan || '-';
-            const jumlahMarkah = p.jumlah !== undefined ? p.jumlah : '-';
-
-            htmlContent += `
-              <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-2 relative">
-                <div class="absolute top-3 right-3 text-xl">⭐</div>
-                <div class="font-bold text-amber-900 text-sm">
-                  ${peringkat} <span class="text-xs font-normal text-gray-600">(${namaPenguji})</span>
-                </div>
-                <div class="text-xs space-y-1 text-gray-700 border-t border-amber-200 pt-2">
-                  <div><b>Nama:</b> <span class="text-gray-900 font-semibold">${namaPesilat}</span></div>
-                  <div><b>IC:</b> ${icPesilat}</div>
-                  <div><b>Gelanggang:</b> ${gelanggangPesilat}</div>
-                  <div><b>Jumlah Markah:</b> <span class="font-bold text-amber-600">${jumlahMarkah}</span></div>
-                </div>
-              </div>
-            `;
+            
+            if (!groupedData[peringkat]) {
+              groupedData[peringkat] = {};
+            }
+            if (!groupedData[peringkat][kumpulan]) {
+              groupedData[peringkat][kumpulan] = {
+                penguji: namaPenguji,
+                pesilatList: []
+              };
+            }
+            
+            // Masukkan ke dalam kumpulan (hanya simpan pesilat unik jika perlu, atau paparkan)
+            groupedData[peringkat][kumpulan].pesilatList.push({
+              nama: p.nama || '-',
+              ic: p.ic || '-',
+              gelanggang: p.gelanggang || kumpulan,
+              jumlah: p.jumlah !== undefined ? p.jumlah : '-'
+            });
           }
         });
       });
 
       if (!adaPesilatStar) {
-        container.innerHTML = `<div class="col-span-full text-center text-sm text-gray-400 italic py-4">Tiada pesilat ditandakan sebagai cemerlang (star) setakat ini.</div>`;
-      } else {
-        container.innerHTML = htmlContent;
+        container.innerHTML = `<div class="text-center text-sm text-gray-400 italic py-4">Tiada pesilat ditandakan sebagai cemerlang (star) setakat ini.</div>`;
+        return;
       }
+
+      let htmlContent = "";
+
+      Object.keys(groupedData).forEach(peringkat => {
+        htmlContent += `
+          <div class="space-y-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <h3 class="text-md font-extrabold text-amber-800 uppercase tracking-wide border-b border-amber-200 pb-2">
+              🥋 ${peringkat}
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        `;
+
+        Object.keys(groupedData[peringkat]).forEach(kump => {
+          const kumpData = groupedData[peringkat][kump];
+          
+          htmlContent += `
+            <div class="bg-white border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-3 relative">
+              <div class="absolute top-3 right-3 text-xl">⭐</div>
+              <div class="font-bold text-slate-800 text-sm">
+                ${kump} <span class="text-xs font-normal text-gray-500">(${kumpData.penguji})</span>
+              </div>
+              <div class="space-y-3 border-t border-amber-100 pt-2">
+          `;
+
+          kumpData.pesilatList.forEach(p => {
+            htmlContent += `
+              <div class="bg-amber-50/60 p-2.5 rounded-lg border border-amber-200/60 text-xs space-y-1">
+                <div><b>Nama Pesilat:</b> <span class="text-gray-900 font-semibold">${p.nama}</span></div>
+                <div><b>IC:</b> ${p.ic}</div>
+                <div><b>Gelanggang:</b> ${p.gelanggang}</div>
+                <div><b>Jumlah Markah:</b> <span class="font-bold text-amber-600">${p.jumlah}</span></div>
+              </div>
+            `;
+          });
+
+          htmlContent += `
+              </div>
+            </div>
+          `;
+        });
+
+        htmlContent += `
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = htmlContent;
     }
 
     function paparLog(logsObj) {
