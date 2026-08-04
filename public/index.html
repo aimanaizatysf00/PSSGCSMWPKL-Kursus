@@ -29,13 +29,35 @@
         <p class="text-xs text-slate-400">Sistem Pengurusan Ujian Kenaikan Tali Pinggang Silat</p>
       </div>
       <div class="text-right flex items-center gap-2">
-        <!-- STATUS AUTO-SAVE INDICATOR -->
         <span id="statusSave" class="text-[11px] font-semibold text-slate-300 hidden"></span>
         <span id="statusDevice" class="inline-block px-2.5 py-1 bg-green-600 text-white text-[10px] font-bold rounded-full uppercase">Aktif</span>
       </div>
     </div>
 
-    <!-- LANGKAH 1: TETAPAN SESI UJIAN (HANYA 3 MEDAN) -->
+    <!-- KOTAK HISTORY / REKOD SESI TERAKHIR (AKAN MUNCUL JIKA ADA SESI TERPUTUS) -->
+    <div id="boxHistory" class="hidden bg-amber-50 border-2 border-amber-400 p-5 rounded-2xl shadow-md space-y-3">
+      <div class="flex items-start justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">📌</span>
+          <div>
+            <h3 class="font-black text-amber-900 text-base">Sesi Penilaian Terakhir Ditemui!</h3>
+            <p id="infoHistory" class="text-xs text-amber-800 font-medium mt-0.5"></p>
+          </div>
+        </div>
+        <span id="badgeHistoryStep" class="bg-amber-200 text-amber-900 font-bold text-[10px] px-2.5 py-1 rounded-full border border-amber-300"></span>
+      </div>
+      
+      <div class="flex gap-2 pt-1">
+        <button onclick="sambungSesiTerakhir()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow transition flex justify-center items-center gap-2">
+          ▶️ Sambung Sesi Terakhir
+        </button>
+        <button onclick="padamHistorySesi()" class="px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
+          🗑️ Mula Sesi Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- LANGKAH 1: TETAPAN SESI UJIAN -->
     <div id="langkah1" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
       <div class="border-b pb-3 flex items-center justify-between">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -48,21 +70,21 @@
         <!-- 1. NAMA PENGUJI -->
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nama Penguji</label>
-          <input type="text" id="namaPenguji" placeholder="Contoh: Ustaz Ahmad" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          <input type="text" id="namaPenguji" oninput="simpanStateLokal()" placeholder="Contoh: Ustaz Ahmad" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
         </div>
 
         <!-- 2. PILIH TALI PINGGANG -->
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tali Pinggang Diuji</label>
-          <select id="pilihanTaliPinggang" onchange="tapisPesilat()" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+          <select id="pilihanTaliPinggang" onchange="tapisPesilat(); simpanStateLokal();" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
             <option value="">-- Pilih Tali Pinggang --</option>
           </select>
         </div>
 
-        <!-- 3. KUMPULAN (NOMBOR SAHAJA) -->
+        <!-- 3. KUMPULAN -->
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Kumpulan</label>
-          <input type="number" id="kumpulanSesi" min="1" placeholder="Contoh: 1" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          <input type="number" id="kumpulanSesi" min="1" oninput="simpanStateLokal()" placeholder="Contoh: 1" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
         </div>
       </div>
 
@@ -101,7 +123,7 @@
       </div>
     </div>
 
-    <!-- LANGKAH 3: BORANG PENILAIAN MARKAH & PENGURUSAN PESILAT -->
+    <!-- LANGKAH 3: BORANG PENILAIAN MARKAH -->
     <div id="langkah3" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
       <div class="border-b pb-3 flex justify-between items-center flex-wrap gap-2">
         <div>
@@ -125,12 +147,8 @@
       <!-- JADUAL INPUT MARKAH -->
       <div class="overflow-x-auto border border-slate-200 rounded-xl">
         <table class="w-full text-left text-xs border-collapse">
-          <thead id="headMarkah" class="bg-slate-800 text-white">
-            <!-- Header Dinamik -->
-          </thead>
-          <tbody id="bodyMarkah" class="divide-y divide-slate-200 bg-white">
-            <!-- Senarai Input Markah Dinamik -->
-          </tbody>
+          <thead id="headMarkah" class="bg-slate-800 text-white"></thead>
+          <tbody id="bodyMarkah" class="divide-y divide-slate-200 bg-white"></tbody>
         </table>
       </div>
 
@@ -146,16 +164,14 @@
 
   </div>
 
-  <!-- MODAL POPUP: TAMBAH PESILAT LEPASAN/EKSTRA -->
+  <!-- MODAL POPUP: TAMBAH PESILAT LEPASAN -->
   <div id="modalTambah" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl border">
       <h3 class="font-bold text-slate-800 text-base border-b pb-2">➕ Tambah Pesilat Tambahan</h3>
       <div class="space-y-3">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Pesilat Lain (Tali Pinggang Sama)</label>
-          <select id="selectExtraPesilat" class="w-full border p-2 rounded-lg text-xs bg-slate-50">
-            <!-- Senarai dinamik -->
-          </select>
+          <select id="selectExtraPesilat" class="w-full border p-2 rounded-lg text-xs bg-slate-50"></select>
         </div>
       </div>
       <div class="flex gap-2 justify-end pt-2">
@@ -176,86 +192,125 @@
     let activeSheetTitle = "";
     let activeKriteria = [];
     let activePesilatPenilaian = []; 
+    let currentLangkah = 1;
     let lastNotifId = 0;
 
-    // SISTEM AUTO-SAVE BERKALA (15 SAAT)
     let hasUnsavedChanges = false;
     let isSaving = false;
 
     window.onload = async function() {
       await muatDataAsas();
-      semakDanPulihkanSesi(); // Auto restore jika page ter-refresh
+      semakHistorySesi(); // Semak jika ada rekod sesi terputus
 
       setInterval(semakStatusPerantiDanNotif, 4000);
 
-      // PEMASA AUTO-SAVE: Berjalan secara automatik setiap 15 saat
+      // Auto-save setiap 15 saat jika di Langkah 3
       setInterval(() => {
-        if (hasUnsavedChanges && !isSaving && activeSheetTitle) {
+        if (hasUnsavedChanges && !isSaving && activeSheetTitle && currentLangkah === 3) {
           simpanMarkahToGS(false);
         }
-      }, 15000); // 15000ms = 15 Saat
+      }, 15000);
     };
 
     // ==========================================
-    // SISTEM STATE RESTORE (PERSISTENCE)
+    // SISTEM STORAGE & HISTORY SESI
     // ==========================================
-    function simpanStatePenilaian() {
-      if (!activeSheetTitle) return;
+    function simpanStateLokal(langkah = currentLangkah) {
+      currentLangkah = langkah;
+      
+      // Ambil IC pesilat yang ditanda di Langkah 2 (jika ada)
+      const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
 
-      const stateData = {
+      const dataSesi = {
+        langkah: currentLangkah,
         penguji: document.getElementById('namaPenguji').value.trim(),
         tp: document.getElementById('pilihanTaliPinggang').value.trim(),
         kumpulan: document.getElementById('kumpulanSesi').value.trim(),
+        chkSelectedIC: chkSelected,
         activeSheetTitle: activeSheetTitle,
         activeKriteria: activeKriteria,
-        activePesilatPenilaian: activePesilatPenilaian
+        activePesilatPenilaian: activePesilatPenilaian,
+        timestamp: new Date().getTime()
       };
 
-      localStorage.setItem("SESI_PENILAIAN_AKTIF", JSON.stringify(stateData));
+      localStorage.setItem("SESI_PENGUJI_TERAKHIR", JSON.stringify(dataSesi));
     }
 
-    function padamStatePenilaian() {
-      localStorage.removeItem("SESI_PENILAIAN_AKTIF");
-    }
-
-    function semakDanPulihkanSesi() {
-      const savedState = localStorage.getItem("SESI_PENILAIAN_AKTIF");
-      if (!savedState) return;
+    function semakHistorySesi() {
+      const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
+      if (!saved) return;
 
       try {
-        const state = JSON.parse(savedState);
-        if (state && state.activeSheetTitle) {
-          document.getElementById('namaPenguji').value = state.penguji || '';
-          document.getElementById('pilihanTaliPinggang').value = state.tp || '';
-          document.getElementById('kumpulanSesi').value = state.kumpulan || '';
-
-          activeSheetTitle = state.activeSheetTitle;
-          activeKriteria = state.activeKriteria || [];
-          activePesilatPenilaian = state.activePesilatPenilaian || [];
-
-          binaJadualMarkah();
-
-          document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
-          document.getElementById('langkah1').classList.add('hidden');
-          document.getElementById('langkah2').classList.add('hidden');
-          document.getElementById('langkah3').classList.remove('hidden');
-
-          paparStatusSave("📂 Sesi Terakhir Dipulihkan");
-          kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
+        const state = JSON.parse(saved);
+        if (state && state.penguji && state.tp) {
+          const info = `Penguji: <b>${state.penguji}</b> | Tali Pinggang: <b>${state.tp}</b> | Kumpulan: <b>${state.kumpulan}</b>`;
+          document.getElementById('infoHistory').innerHTML = info;
+          document.getElementById('badgeHistoryStep').innerText = `Terhenti di Langkah ${state.langkah}`;
+          document.getElementById('boxHistory').classList.remove('hidden');
         }
       } catch (e) {
-        console.error("Gagal pulihkan sesi:", e);
+        console.error("Ralat semak history:", e);
       }
+    }
+
+    function sambungSesiTerakhir() {
+      const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
+      if (!saved) return;
+
+      const state = JSON.parse(saved);
+
+      // Isikan borang langkah 1
+      document.getElementById('namaPenguji').value = state.penguji || '';
+      document.getElementById('pilihanTaliPinggang').value = state.tp || '';
+      document.getElementById('kumpulanSesi').value = state.kumpulan || '';
+
+      tapisPesilat(); // Regenerate senarai pesilat berdasarkan TP
+
+      if (state.langkah === 2) {
+        // Pulihkan tandaan checkbox di Langkah 2
+        if (state.chkSelectedIC && state.chkSelectedIC.length > 0) {
+          const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
+          checkboxes.forEach(cb => {
+            if (state.chkSelectedIC.includes(cb.value)) cb.checked = true;
+          });
+        }
+        keLangkah2();
+      } else if (state.langkah === 3) {
+        // Pulihkan penuh jadual penilaian Langkah 3
+        activeSheetTitle = state.activeSheetTitle;
+        activeKriteria = state.activeKriteria || [];
+        activePesilatPenilaian = state.activePesilatPenilaian || [];
+
+        binaJadualMarkah();
+
+        document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
+        document.getElementById('langkah1').classList.add('hidden');
+        document.getElementById('langkah2').classList.add('hidden');
+        document.getElementById('langkah3').classList.remove('hidden');
+        
+        currentLangkah = 3;
+        paparStatusSave("📂 Sesi Terakhir Dipulihkan");
+        kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
+      }
+
+      document.getElementById('boxHistory').classList.add('hidden');
+    }
+
+    function padamHistorySesi() {
+      localStorage.removeItem("SESI_PENGUJI_TERAKHIR");
+      document.getElementById('boxHistory').classList.add('hidden');
     }
 
     function tamatSesiLangkah3() {
       if (confirm("Adakah anda pasti untuk menamatkan sesi ini & memulakan borang baharu?")) {
-        padamStatePenilaian();
+        padamHistorySesi();
         location.reload();
       }
     }
 
-    // 1. MUAT DATA ASAS
+    // ==========================================
+    // LOGIK APLIKASI UTAMA
+    // ==========================================
     async function muatDataAsas() {
       try {
         const res = await fetch(APPS_SCRIPT_URL);
@@ -277,7 +332,6 @@
       }
     }
 
-    // 2. TAPIS PESILAT UNTUK LANGKAH 2
     function tapisPesilat() {
       const selectElem = document.getElementById('pilihanTaliPinggang');
       const tpDipilih = selectElem.value.trim().toLowerCase();
@@ -302,7 +356,7 @@
 
       container.innerHTML = pesilatTersaring.map((p) => `
         <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
-          <input type="checkbox" name="chkPesilat" value="${p.ic}" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
+          <input type="checkbox" name="chkPesilat" value="${p.ic}" onchange="simpanStateLokal()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
           <div class="overflow-hidden">
             <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
             <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang}</span></p>
@@ -314,6 +368,7 @@
     function tandaSemua(status) {
       const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
       checkboxes.forEach(cb => cb.checked = status);
+      simpanStateLokal();
     }
 
     function keLangkah2() {
@@ -330,6 +385,7 @@
       document.getElementById('langkah3').classList.add('hidden');
       document.getElementById('langkah2').classList.remove('hidden');
 
+      simpanStateLokal(2);
       kemaskiniLogPeranti("Langkah 2: Pilih Pesilat");
     }
 
@@ -338,10 +394,10 @@
       document.getElementById('langkah3').classList.add('hidden');
       document.getElementById('langkah1').classList.remove('hidden');
 
+      simpanStateLokal(1);
       kemaskiniLogPeranti("Halaman Utama");
     }
 
-    // 3. JANA SHEET DAN PERSIAPAN LANGKAH 3
     async function janaBorangPenilaian() {
       const penguji = document.getElementById('namaPenguji').value.trim();
       const tp = document.getElementById('pilihanTaliPinggang').value.trim();
@@ -379,7 +435,7 @@
           activeSheetTitle = data.sheetTitle;
 
           binaJadualMarkah();
-          simpanStatePenilaian(); // Simpan State terus selepas sheet terjana
+          simpanStateLokal(3);
 
           document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
           document.getElementById('langkah2').classList.add('hidden');
@@ -394,7 +450,6 @@
       }
     }
 
-    // BINA/KEMASKINI JADUAL LANGKAH 3
     function binaJadualMarkah() {
       const tp = document.getElementById('pilihanTaliPinggang').value.trim();
       const markahMaksList = dbTetapan[tp]?.markahMaks || [];
@@ -442,7 +497,6 @@
       });
 
       tbody.innerHTML = bodyHTML;
-
       activePesilatPenilaian.forEach((_, pIdx) => kiraJumlah(pIdx));
     }
 
@@ -453,12 +507,10 @@
       activePesilatPenilaian[pIdx].markah[kIdx] = Number(value) || 0;
       kiraJumlah(pIdx);
 
-      // Tanda bahawa terdapat perubahan yang belum disimpan
       hasUnsavedChanges = true;
       paparStatusSave("⏳ Ada perubahan (Auto-save dalam 15s)");
 
-      // Simpan lokal terupdate secara spontan
-      simpanStatePenilaian();
+      simpanStateLokal(3);
     }
 
     function kiraJumlah(pIdx) {
@@ -477,7 +529,7 @@
       activePesilatPenilaian[barisBaru] = temp;
 
       binaJadualMarkah();
-      simpanStatePenilaian();
+      simpanStateLokal(3);
       hasUnsavedChanges = true;
       simpanMarkahToGS(false);
     }
@@ -487,7 +539,7 @@
       if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
         activePesilatPenilaian.splice(index, 1);
         binaJadualMarkah();
-        simpanStatePenilaian();
+        simpanStateLokal(3);
         hasUnsavedChanges = true;
         simpanMarkahToGS(false);
       }
@@ -526,20 +578,19 @@
         });
         binaJadualMarkah();
         tutupModalTambah();
-        simpanStatePenilaian();
+        simpanStateLokal(3);
         hasUnsavedChanges = true;
         simpanMarkahToGS(false);
       }
     }
 
-    // 4. SIMPAN MARKAH KE GOOGLE APPS SCRIPT
     async function simpanMarkahToGS(isManual = false) {
       if (activePesilatPenilaian.length === 0) {
         if (isManual) alert("Sila pastikan terdapat sekurang-kurangnya seorang pesilat dalam jadual.");
         return;
       }
 
-      if (isSaving) return; // Mengelakkan pertindihan simpanan jika sedang menyimpan
+      if (isSaving) return;
 
       isSaving = true;
       paparStatusSave("🔄 Menyimpan...");
@@ -580,8 +631,8 @@
 
         const data = await res.json();
         if (data.success) {
-          hasUnsavedChanges = false; // Reset balik status sebab dah berjaya simpan
-          simpanStatePenilaian();   // Simpan versi terkini ke LocalStorage
+          hasUnsavedChanges = false;
+          simpanStateLokal(3);
           paparStatusSave("☁️ Disimpan ke Sheet");
           if (isManual) alert("✅ " + data.message);
         } else {
@@ -602,7 +653,6 @@
       el.innerText = mesej;
     }
 
-    // 5. HELPER LOG & NOTIF
     async function kemaskiniLogPeranti(peringkatTekini) {
       const penguji = document.getElementById('namaPenguji').value.trim();
 
@@ -637,7 +687,7 @@
         const dataLog = await resLog.json();
 
         if (dataLog.forceReset) {
-          padamStatePenilaian();
+          padamHistorySesi();
           alert("⚠️ Sesi anda telah direset oleh Urus Setia.");
           location.reload();
         }
