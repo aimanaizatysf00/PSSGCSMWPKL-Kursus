@@ -770,7 +770,16 @@
       if (!DRAF_TERSIMPAM_DATA) return;
       const draft = DRAF_TERSIMPAM_DATA;
 
-      if (draft.penguji) document.getElementById('namaPenguji').value = draft.penguji;
+      let namaBaru = draft.penguji;
+      if (!namaBaru || namaBaru.trim() === '') {
+        namaBaru = prompt("Sila masukkan Nama Anda (Penguji Baru):");
+        if (!namaBaru || namaBaru.trim() === '') {
+          alert("Nama penguji diperlukan untuk meneruskan sesi.");
+          return;
+        }
+      }
+
+      document.getElementById('namaPenguji').value = namaBaru.trim();
       if (draft.tp) document.getElementById('pilihTaliPinggang').value = draft.tp;
       if (draft.kump) document.getElementById('kumpulanUjian').value = draft.kump;
       
@@ -780,31 +789,26 @@
         document.getElementById('infoSheetBorang').innerText = "Sheet: " + CURRENT_SHEET_TITLE;
       }
 
-      if (draft.langkah && draft.langkah > 1) {
-        const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
-        if (draft.langkah === 3) {
-          binaBorangMarkah(kriteriaObj);
-        } else if (draft.langkah === 2) {
-          keLangkah2();
-        }
+      const kriteriaObj = DB_TETAPAN[draft.tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
+      binaBorangMarkah(kriteriaObj);
+      tunjukLangkah(3, false);
 
-        if (draft.inputs) {
-          PESILAT_TERPILIH.forEach((p, pIdx) => {
-            const vals = draft.inputs[p.ic] || draft.inputs[pIdx];
-            if (vals) {
-              const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
-              inputs.forEach((inp, i) => {
-                if (vals[i] !== undefined) inp.value = vals[i];
-              });
-              kiraJumlahPesilat(pIdx);
-            }
-          });
-        }
-
-        tunjukLangkah(draft.langkah, false);
+      if (draft.inputs) {
+        PESILAT_TERPILIH.forEach((p, pIdx) => {
+          const vals = draft.inputs[p.ic] || draft.inputs[pIdx];
+          if (vals) {
+            const inputs = document.querySelectorAll(`.inputMarkah_${pIdx}`);
+            inputs.forEach((inp, i) => {
+              if (vals[i] !== undefined) inp.value = vals[i];
+            });
+            kiraJumlahPesilat(pIdx);
+          }
+        });
       }
 
+      DRAF_TERSIMPAM_DATA = null;
       document.getElementById('bannerDrafSesi').classList.add('hidden');
+      hantarLogPenguji();
     }
 
     function padamDrafSesi() {
@@ -843,7 +847,7 @@
         peringkat: tp,
         kumpulan: kump,
         pesilat: pesilatPayload,
-        sheetTitle: CURRENT_SHEET_TITLE // Sertakan sheet asal
+        sheetTitle: CURRENT_SHEET_TITLE
       };
 
       try {
@@ -868,7 +872,6 @@
           tunjukLangkah(1, false);
         }
 
-        // Semak jika pelayan menghantar draf sesi pindahan peranti (tiada nama penguji lagi tapi ada pesilat)
         if (data.draftData && (!penguji || penguji === '') && data.draftData.pesilat && data.draftData.pesilat.length > 0) {
           const draftPindahan = {
             langkah: 3,
@@ -876,7 +879,7 @@
             tp: data.draftData.peringkat,
             kump: data.draftData.kumpulan,
             pesilat: data.draftData.pesilat,
-            sheetTitle: data.draftData.sheetTitle || CURRENT_SHEET_TITLE // Kekalkan sheet asal
+            sheetTitle: data.draftData.sheetTitle || CURRENT_SHEET_TITLE
           };
           
           DRAF_TERSIMPAM_DATA = draftPindahan;
