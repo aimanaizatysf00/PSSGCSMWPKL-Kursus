@@ -87,91 +87,65 @@
     }
 
     function paparLog(logsObj) {
-  const tbody = document.getElementById('jadualLog');
-  const keys = Object.keys(logsObj);
+      const tbody = document.getElementById('jadualLog');
+      const keys = Object.keys(logsObj);
 
-  if (keys.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Tiada aktiviti peranti direkodkan lagi.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = keys.map(devId => {
-    const item = logsObj[devId];
-    const isReset = item.status === 'RESET_REQUESTED';
-
-    // 1. RAWATAN & PENGELUARAN SENARAI PESILAT (PETA DATA FLEKSIBEL)
-    let listPesilat = [];
-
-    if (item.pesilat) {
-      if (Array.isArray(item.pesilat)) {
-        listPesilat = item.pesilat.map(p => {
-          if (typeof p === 'object' && p !== null) return p.nama || JSON.stringify(p);
-          return String(p);
-        });
-      } else if (typeof item.pesilat === 'string' && item.pesilat.trim() !== '-' && item.pesilat.trim() !== '') {
-        // Semak jika string mengandungi format JSON
-        if (item.pesilat.startsWith('[') || item.pesilat.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(item.pesilat);
-            if (Array.isArray(parsed)) {
-              listPesilat = parsed.map(p => typeof p === 'object' ? (p.nama || JSON.stringify(p)) : p);
-            } else if (typeof parsed === 'object') {
-              listPesilat = [parsed.nama || JSON.stringify(parsed)];
-            }
-          } catch(e) {
-            listPesilat = item.pesilat.split(',').map(s => s.trim());
-          }
-        } else {
-          listPesilat = item.pesilat.split(',').map(s => s.trim());
-        }
-      } else if (typeof item.pesilat === 'object' && item.pesilat !== null) {
-        listPesilat = [item.pesilat.nama || JSON.stringify(item.pesilat)];
+      if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Tiada aktiviti peranti direkodkan lagi.</td></tr>`;
+        return;
       }
-    }
 
-    // Tapis nama kosong atau tanda sempang
-    listPesilat = listPesilat.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
+      tbody.innerHTML = keys.map(devId => {
+        const item = logsObj[devId];
+        const isReset = item.status === 'RESET_REQUESTED';
 
-    // 2. PAPARAN HTML SENARAI PESILAT
-    let htmlPesilat = `<span class="text-gray-400 italic text-xs">- Tiada Pesilat -</span>`;
+        // 1. RAWATAN & PENGELUARAN SENARAI PESILAT (PETA DATA FLEKSIBEL)
+        let listPesilat = [];
 
-    if (listPesilat.length > 0) {
-      htmlPesilat = `
-        <div class="max-h-32 overflow-y-auto space-y-1 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs min-w-[180px]">
-          ${listPesilat.map((nama, idx) => `
-            <div class="truncate text-slate-700 font-medium border-b border-gray-200 last:border-0 pb-0.5">
-              ${idx + 1}. ${nama}
+        if (item.pesilat) {
+          if (Array.isArray(item.pesilat)) {
+            listPesilat = item.pesilat.map(p => {
+              if (typeof p === 'object' && p !== null) return p.nama || JSON.stringify(p);
+              return String(p);
+            });
+          } else if (typeof item.pesilat === 'string' && item.pesilat.trim() !== '-' && item.pesilat.trim() !== '') {
+            // Semak jika string mengandungi format JSON
+            if (item.pesilat.startsWith('[') || item.pesilat.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(item.pesilat);
+                if (Array.isArray(parsed)) {
+                  listPesilat = parsed.map(p => typeof p === 'object' ? (p.nama || JSON.stringify(p)) : p);
+                } else if (typeof parsed === 'object') {
+                  listPesilat = [parsed.nama || JSON.stringify(parsed)];
+                }
+              } catch(e) {
+                listPesilat = item.pesilat.split(',').map(s => s.trim());
+              }
+            } else {
+              listPesilat = item.pesilat.split(',').map(s => s.trim());
+            }
+          } else if (typeof item.pesilat === 'object' && item.pesilat !== null) {
+            listPesilat = [item.pesilat.nama || JSON.stringify(item.pesilat)];
+          }
+        }
+
+        // Tapis nama kosong, null, atau tanda sempang
+        listPesilat = listPesilat.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
+
+        // 2. PAPARAN HTML SENARAI PESILAT
+        let htmlPesilat = `<span class="text-gray-400 italic text-xs">- Tiada Pesilat -</span>`;
+
+        if (listPesilat.length > 0) {
+          htmlPesilat = `
+            <div class="max-h-32 overflow-y-auto space-y-1 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs min-w-[180px]">
+              ${listPesilat.map((nama, idx) => `
+                <div class="truncate text-slate-700 font-medium border-b border-gray-200 last:border-0 pb-0.5">
+                  ${idx + 1}. ${nama}
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    return `
-      <tr class="border-b hover:bg-slate-50">
-        <td class="p-3 border font-mono text-xs text-slate-600 align-top">${devId}</td>
-        <td class="p-3 border font-bold text-gray-800 align-top">${item.penguji || '-'}</td>
-        <td class="p-3 border align-top">
-          <span class="px-2 py-1 rounded text-xs font-semibold inline-block ${isReset ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'}">
-            ${item.peringkat || '-'}
-          </span>
-        </td>
-        <td class="p-3 border align-top max-w-xs">${htmlPesilat}</td>
-        <td class="p-3 border text-xs text-gray-500 align-top">${item.lastUpdate || '-'}</td>
-        <td class="p-3 border text-center align-top">
-          <div class="flex items-center justify-center gap-1.5">
-            <button onclick="resetSesiPeranti('${devId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
-              Reset
-            </button>
-            <button onclick="padamLogPeranti('${devId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Padam Log Peranti Ini">
-              🗑️ Padam
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
+          `;
+        }
 
         return `
           <tr class="border-b hover:bg-slate-50">
