@@ -380,7 +380,7 @@
       container.innerHTML = PESILAT_TERPILIH.map((p, pIdx) => `
         <div class="bg-slate-50 border rounded-xl p-3 shadow-sm hover:border-amber-400 transition flex items-center gap-3 w-full">
           
-          <!-- MAKLUMAT PESILAT (DISUSUN MENEGAK: NAMA -> IC -> GELANGGANG) -->
+          <!-- MAKLUMAT PESILAT (MENEGAK: NAMA -> IC -> GELANGGANG) -->
           <div class="w-44 flex-shrink-0 border-r border-slate-200 pr-3 space-y-1 text-xs">
             <div class="flex items-center gap-1">
               <span class="font-black text-amber-600">#${pIdx + 1}</span>
@@ -559,7 +559,7 @@
         }
       } catch(e) {
         alert("Ralat semasa menyimpan markah.");
-      } fontally {
+      } finally {
         hideLoading();
       }
     }
@@ -574,7 +574,6 @@
       document.getElementById('pesilatModal').classList.add('hidden');
     }
 
-    /* PENGURUSAN PESILAT & SUSUNAN (NAIK/TURUN) */
     function tapisPesilatModal() {
       const tp = document.getElementById('pilihTaliPinggang').value;
       const keyword = document.getElementById('searchPesilatInput').value.toLowerCase().trim();
