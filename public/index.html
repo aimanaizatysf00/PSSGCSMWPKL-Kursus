@@ -674,7 +674,6 @@
 
       try {
         const draft = JSON.parse(saved);
-        // Pastikan draf mempunyai penguji atau pesilat untuk dipaparkan
         if (draft && (draft.penguji || draft.tp || (draft.pesilat && draft.pesilat.length > 0))) {
           DRAF_TERSIMPAM_DATA = draft;
           
@@ -684,7 +683,6 @@
             <span><b>Bil. Pesilat:</b> ${draft.pesilat ? draft.pesilat.length : 0} orang</span>
           `;
           
-          // Paparkan banner di halaman utama
           document.getElementById('bannerDrafSesi').classList.remove('hidden');
         }
       } catch(e) {}
@@ -728,7 +726,6 @@
         tunjukLangkah(draft.langkah, false);
       }
 
-      // Sembunyikan banner apabila draf diteruskan
       document.getElementById('bannerDrafSesi').classList.add('hidden');
     }
 
@@ -736,6 +733,11 @@
       localStorage.removeItem('SILAT_DRAFT_SESSION');
       DRAF_TERSIMPAM_DATA = null;
       document.getElementById('bannerDrafSesi').classList.add('hidden');
+      document.getElementById('namaPenguji').value = '';
+      document.getElementById('pilihTaliPinggang').value = '';
+      document.getElementById('kumpulanUjian').value = '';
+      PESILAT_TERPILIH = [];
+      CURRENT_SHEET_TITLE = "";
       tunjukLangkah(1, false);
     }
 
@@ -760,10 +762,18 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (data.forceReset) {
-          alert("⚠️ Sesi peranti ini telah di-reset oleh Urus Setia.");
+        
+        // Semak jika admin menekan butang reset atau padam log
+        if (data.forceReset || data.status === 'RESET_REQUESTED') {
           localStorage.removeItem('SILAT_DRAFT_SESSION');
-          window.location.reload();
+          DRAF_TERSIMPAM_DATA = null;
+          document.getElementById('bannerDrafSesi').classList.add('hidden');
+          document.getElementById('namaPenguji').value = '';
+          document.getElementById('pilihTaliPinggang').value = '';
+          document.getElementById('kumpulanUjian').value = '';
+          PESILAT_TERPILIH = [];
+          CURRENT_SHEET_TITLE = "";
+          tunjukLangkah(1, false);
         }
       } catch (e) {}
     }
