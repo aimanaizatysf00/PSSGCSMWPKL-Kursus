@@ -34,6 +34,19 @@
       </div>
     </div>
 
+    <!-- SEKSYEN PESILAT TERBAIK (STAR) -->
+    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-yellow-500 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <span>⭐</span> Pesilat Terbaik (Pilihan Penguji)
+        </h2>
+        <span class="text-xs text-gray-500">Senarai pesilat cemerlang yang diberi penarafan bintang</span>
+      </div>
+      <div id="senaraiPesilatTerbaikContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="text-sm text-gray-500 italic p-2">Memuatkan senarai pesilat terbaik...</div>
+      </div>
+    </div>
+
     <!-- JADUAL LOG PERANTI PENGUJI -->
     <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -80,10 +93,83 @@
         
         if (data.success && data.logs) {
           paparLog(data.logs);
+          paparPesilatTerbaik(data.logs);
         }
       } catch (e) {
         console.error("Gagal muat log admin", e);
       }
+    }
+
+    // FUNGSI MEMAPARKAN KOTAK PESILAT TERBAIK
+    function paparPesilatTerbaik(logsObj) {
+      const container = document.getElementById('senaraiPesilatTerbaikContainer');
+      const keys = Object.keys(logsObj);
+      let adaPesilatStar = false;
+      let htmlContent = "";
+
+      keys.forEach(devId => {
+        const item = logsObj[devId];
+        let listPesilat = rawatSenaraiPesilat(item.pesilat);
+
+        // Cari pesilat yang bertanda starred === true
+        listPesilat.forEach(p => {
+          if (p && typeof p === 'object' && p.starred === true) {
+            adaPesilatStar = true;
+            const namaPenguji = item.penguji || 'Tanpa Nama';
+            const peringkat = item.peringkat || '-';
+            const namaPesilat = p.nama || '-';
+            const icPesilat = p.ic || '-';
+            const gelanggangPesilat = p.gelanggang || '-';
+            const jumlahMarkah = p.jumlah !== undefined ? p.jumlah : '-';
+
+            htmlContent += `
+              <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm space-y-2 relative">
+                <div class="absolute top-3 right-3 text-xl">⭐</div>
+                <div class="font-bold text-amber-900 text-sm">
+                  ${peringkat} <span class="text-xs font-normal text-gray-600">(${namaPenguji})</span>
+                </div>
+                <div class="text-xs space-y-1 text-gray-700 border-t border-amber-200 pt-2">
+                  <div><b>Nama:</b> <span class="text-gray-900 font-semibold">${namaPesilat}</span></div>
+                  <div><b>IC:</b> ${icPesilat}</div>
+                  <div><b>Gelanggang:</b> ${gelanggangPesilat}</div>
+                  <div><b>Jumlah Markah:</b> <span class="font-bold text-amber-600">${jumlahMarkah}</span></div>
+                </div>
+              </div>
+            `;
+          }
+        });
+      });
+
+      if (!adaPesilatStar) {
+        container.innerHTML = `<div class="col-span-full text-center text-sm text-gray-400 italic py-4">Tiada pesilat ditandakan sebagai cemerlang (star) setakat ini.</div>`;
+      } else {
+        container.innerHTML = htmlContent;
+      }
+    }
+
+    // FUNGSI BANTUAN MENERJEMAH FORMAT PESILAT DARI LOG
+    function rawatSenaraiPesilat(pesilatData) {
+      let listPesilat = [];
+      if (pesilatData) {
+        if (Array.isArray(pesilatData)) {
+          listPesilat = pesilatData;
+        } else if (typeof pesilatData === 'string' && pesilatData.trim() !== '-' && pesilatData.trim() !== '') {
+          try {
+            const parsed = JSON.parse(pesilatData);
+            if (Array.isArray(parsed)) {
+              listPesilat = parsed;
+            } else if (typeof parsed === 'object') {
+              listPesilat = [parsed];
+            }
+          } catch(e) {
+            // Kalau string biasa
+            listPesilat = pesilatData.split(',').map(s => ({ nama: s.trim() }));
+          }
+        } else if (typeof pesilatData === 'object' && pesilatData !== null) {
+          listPesilat = [pesilatData];
+        }
+      }
+      return listPesilat;
     }
 
     function paparLog(logsObj) {
@@ -99,44 +185,16 @@
         const item = logsObj[devId];
         const isReset = item.status === 'RESET_REQUESTED';
 
-        // 1. RAWATAN & PENGELUARAN SENARAI PESILAT
-        let listPesilat = [];
+        let listPesilatObj = rawatSenaraiPesilat(item.pesilat);
+        let listNama = listPesilatObj.map(p => typeof p === 'object' && p !== null ? (p.nama + (p.starred ? ' ⭐' : '')) : String(p));
+        listNama = listNama.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
 
-        if (item.pesilat) {
-          if (Array.isArray(item.pesilat)) {
-            listPesilat = item.pesilat.map(p => {
-              if (typeof p === 'object' && p !== null) return p.nama || JSON.stringify(p);
-              return String(p);
-            });
-          } else if (typeof item.pesilat === 'string' && item.pesilat.trim() !== '-' && item.pesilat.trim() !== '') {
-            if (item.pesilat.startsWith('[') || item.pesilat.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(item.pesilat);
-                if (Array.isArray(parsed)) {
-                  listPesilat = parsed.map(p => typeof p === 'object' ? (p.nama || JSON.stringify(p)) : p);
-                } else if (typeof parsed === 'object') {
-                  listPesilat = [parsed.nama || JSON.stringify(parsed)];
-                }
-              } catch(e) {
-                listPesilat = item.pesilat.split(',').map(s => s.trim());
-              }
-            } else {
-              listPesilat = item.pesilat.split(',').map(s => s.trim());
-            }
-          } else if (typeof item.pesilat === 'object' && item.pesilat !== null) {
-            listPesilat = [item.pesilat.nama || JSON.stringify(item.pesilat)];
-          }
-        }
-
-        listPesilat = listPesilat.filter(p => p && p !== '-' && p !== 'null' && p !== 'undefined');
-
-        // 2. PAPARAN HTML SENARAI PESILAT
         let htmlPesilat = `<span class="text-gray-400 italic text-xs">- Tiada Pesilat -</span>`;
 
-        if (listPesilat.length > 0) {
+        if (listNama.length > 0) {
           htmlPesilat = `
             <div class="max-h-32 overflow-y-auto space-y-1 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs min-w-[180px]">
-              ${listPesilat.map((nama, idx) => `
+              ${listNama.map((nama, idx) => `
                 <div class="truncate text-slate-700 font-medium border-b border-gray-200 last:border-0 pb-0.5">
                   ${idx + 1}. ${nama}
                 </div>
