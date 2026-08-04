@@ -113,9 +113,14 @@
             <td class="p-3 border text-xs text-gray-600 max-w-xs truncate">${item.pesilat}</td>
             <td class="p-3 border text-xs text-gray-500">${item.lastUpdate}</td>
             <td class="p-3 border text-center">
-              <button onclick="resetSesiPeranti('${item.deviceId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition">
-                Reset Peranti
-              </button>
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="resetSesiPeranti('${item.deviceId}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset Sesi Peranti">
+                  Reset
+                </button>
+                <button onclick="padamLogPeranti('${item.deviceId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Padam Log Peranti Ini">
+                  🗑️ Padam
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -167,6 +172,28 @@
         }
       } catch(e) {
         alert("Gagal mereset peranti.");
+      }
+    }
+
+    // PADAM LOG PERANTI DARI SISTEM
+    async function padamLogPeranti(devId) {
+      if (!confirm(`Adakah anda pasti mahu memadam log peranti [${devId}]?`)) return;
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'deleteDeviceLog', deviceId: devId })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Log peranti berjaya dipadam.");
+          muatLogAdmin();
+        } else {
+          alert("Gagal memadam log peranti.");
+        }
+      } catch(e) {
+        alert("Ralat semasa memadam log peranti.");
       }
     }
   </script>
