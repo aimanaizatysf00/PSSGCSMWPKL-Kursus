@@ -177,38 +177,47 @@
       }
     }
 
-    // 2. TAPIS SENARAI PESILAT (HANYA PADANAN TEPAT DENGAN LAJUR E)
-    function tapisPesilat() {
-      const tpDipilih = document.getElementById('pilihanTaliPinggang').value.trim().toLowerCase();
-      const container = document.getElementById('senaraiPesilatContainer');
+    // 2. TAPIS SENARAI PESILAT (PADANAN TEPAT & PEMBERSIHAN STRUKTUR TEXT)
+function tapisPesilat() {
+  const selectElem = document.getElementById('pilihanTaliPinggang');
+  const tpDipilih = selectElem.value.trim().toLowerCase();
+  const container = document.getElementById('senaraiPesilatContainer');
 
-      if (!tpDipilih) {
-        container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
-        return;
-      }
+  // Bersihkan kontena terlebih dahulu
+  container.innerHTML = '';
 
-      // TAPISAN TEPAT: Menapis `peringkat` (Lajur E: Tali Pinggang Diuji)
-      const pesilatTersaring = dbPesilat.filter(p => {
-        const tpDiuji = String(p.peringkat || '').trim().toLowerCase();
-        return tpDiuji === tpDipilih;
-      });
+  if (!tpDipilih) {
+    container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
+    return;
+  }
 
-      if (pesilatTersaring.length === 0) {
-        container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${document.getElementById('pilihanTaliPinggang').value}"</p>`;
-        return;
-      }
+  // TAPISAN TEPAT: Menapis 'peringkat' (Lajur E: Tali Pinggang Diuji)
+  const pesilatTersaring = dbPesilat.filter(p => {
+    // Bersihkan sebarang aksara khas, ruang kosong lebihan & tukar ke huruf kecil
+    const tpDiuji = String(p.peringkat || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+    
+    return tpDiuji === tpDipilih;
+  });
 
-      container.innerHTML = pesilatTersaring.map((p, idx) => `
-        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
-          <input type="checkbox" name="chkPesilat" value="${p.ic}" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
-          <div class="overflow-hidden">
-            <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
-            <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang}</span></p>
-          </div>
-        </label>
-      `).join('');
-    }
+  if (pesilatTersaring.length === 0) {
+    container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"</p>`;
+    return;
+  }
 
+  // Paparkan pesilat yang BENAR-BENAR padan sahaja
+  container.innerHTML = pesilatTersaring.map((p) => `
+    <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
+      <input type="checkbox" name="chkPesilat" value="${p.ic}" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
+      <div class="overflow-hidden">
+        <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
+        <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang}</span></p>
+      </div>
+    </label>
+  `).join('');
+}
     function tandaSemua(status) {
       const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
       checkboxes.forEach(cb => cb.checked = status);
