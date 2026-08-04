@@ -81,13 +81,13 @@
     <div id="bannerDrafSesi" class="bg-amber-500/10 border-2 border-amber-500/40 p-4 rounded-2xl mb-6 hidden flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="space-y-1 text-center md:text-left">
         <div class="font-bold text-amber-400 flex items-center justify-center md:justify-start gap-2">
-          <span>📂</span> Draf Sesi Ujian Belum Selesai Ditemui
+          <span>📂</span> Sesi Ujian / Pengambilalihan Peranti Dikesan
         </div>
         <div id="infoDrafSesi" class="text-xs text-slate-300 font-mono"></div>
       </div>
       <div class="flex gap-2 w-full md:w-auto">
         <button onclick="padamDrafSesi()" class="flex-1 md:flex-initial px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow">
-          🗑️ Padam Draf
+          🗑️ Padam / Mula Baru
         </button>
         <button onclick="teruskanSesiDraf()" class="flex-1 md:flex-initial px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shadow">
           ▶️ Sambung Sesi
@@ -770,16 +770,8 @@
       if (!DRAF_TERSIMPAM_DATA) return;
       const draft = DRAF_TERSIMPAM_DATA;
 
-      let namaBaru = draft.penguji;
-      if (!namaBaru || namaBaru.trim() === '') {
-        namaBaru = prompt("Sila masukkan Nama Anda (Penguji Baru):");
-        if (!namaBaru || namaBaru.trim() === '') {
-          alert("Nama penguji diperlukan untuk meneruskan sesi.");
-          return;
-        }
-      }
-
-      document.getElementById('namaPenguji').value = namaBaru.trim();
+      // Jika pindah peranti, guna terus nama penguji asal (atau dari server pindahan) tanpa paksa taip baru
+      document.getElementById('namaPenguji').value = draft.penguji || '';
       if (draft.tp) document.getElementById('pilihTaliPinggang').value = draft.tp;
       if (draft.kump) document.getElementById('kumpulanUjian').value = draft.kump;
       
@@ -872,10 +864,11 @@
           tunjukLangkah(1, false);
         }
 
+        // Apabila admin tekan pindah peranti, peranti baru akan terima data draf tanpa perlu taip nama penguji asal
         if (data.draftData && (!penguji || penguji === '') && data.draftData.pesilat && data.draftData.pesilat.length > 0) {
           const draftPindahan = {
             langkah: 3,
-            penguji: '',
+            penguji: data.draftData.namaPenguji || data.draftData.penguji || '',
             tp: data.draftData.peringkat,
             kump: data.draftData.kumpulan,
             pesilat: data.draftData.pesilat,
@@ -884,7 +877,8 @@
           
           DRAF_TERSIMPAM_DATA = draftPindahan;
           document.getElementById('infoDrafSesi').innerHTML = `
-            <span><b>Sesi Dipindahkan!</b> Tali Pinggang: ${draftPindahan.tp || '-'}</span> | 
+            <span><b>Sesi Dipindahkan!</b> Penguji Asal: ${draftPindahan.penguji || '-'}</span> | 
+            <span><b>Tali Pinggang:</b> ${draftPindahan.tp || '-'}</span> | 
             <span><b>Bil. Pesilat:</b> ${draftPindahan.pesilat.length} orang</span>
           `;
           document.getElementById('bannerDrafSesi').classList.remove('hidden');
