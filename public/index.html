@@ -182,532 +182,540 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrxrqRztQjuSxpb-lLv-33yi_WBO1pkAY7wmmAox5cFRgMyWdWahziFLtmIfPJaw5olQ/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrxrqRztQjuSxpb-lLv-33yi_WBO1pkAY7wmmAox5cFRgMyWdWahziFLtmIfPJaw5olQ/exec";
 
-    let DEVICE_ID = localStorage.getItem("DEVICE_ID_PENGUJI") || "DEV_" + Math.random().toString(36).substr(2, 7).toUpperCase();
-    localStorage.setItem("DEVICE_ID_PENGUJI", DEVICE_ID);
+  let DEVICE_ID = localStorage.getItem("DEVICE_ID_PENGUJI") || "DEV_" + Math.random().toString(36).substr(2, 7).toUpperCase();
+  localStorage.setItem("DEVICE_ID_PENGUJI", DEVICE_ID);
 
-    let dbPesilat = [];
-    let dbTetapan = {};
-    let activeSheetTitle = "";
-    let activeKriteria = [];
-    let activePesilatPenilaian = []; 
-    let currentLangkah = 1;
-    let lastNotifId = 0;
+  let dbPesilat = [];
+  let dbTetapan = {};
+  let activeSheetTitle = "";
+  let activeKriteria = [];
+  let activePesilatPenilaian = []; 
+  let currentLangkah = 1;
+  let lastNotifId = 0;
 
-    let hasUnsavedChanges = false;
-    let isSaving = false;
+  let hasUnsavedChanges = false;
+  let isSaving = false;
 
-    window.onload = async function() {
-      await muatDataAsas();
-      semakHistorySesi(); // Semak jika ada rekod sesi terputus
+  window.onload = async function() {
+    await muatDataAsas();
+    semakHistorySesi();
 
-      setInterval(semakStatusPerantiDanNotif, 4000);
+    setInterval(semakStatusPerantiDanNotif, 4000);
 
-      // Auto-save setiap 15 saat jika di Langkah 3
-      setInterval(() => {
-        if (hasUnsavedChanges && !isSaving && activeSheetTitle && currentLangkah === 3) {
-          simpanMarkahToGS(false);
-        }
-      }, 15000);
+    setInterval(() => {
+      if (hasUnsavedChanges && !isSaving && activeSheetTitle && currentLangkah === 3) {
+        simpanMarkahToGS(false);
+      }
+    }, 15000);
+  };
+
+  // ==========================================
+  // SISTEM STORAGE & HISTORY SESI
+  // ==========================================
+  function simpanStateLokal(langkah = currentLangkah) {
+    currentLangkah = langkah;
+    const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
+
+    const dataSesi = {
+      langkah: currentLangkah,
+      penguji: document.getElementById('namaPenguji').value.trim(),
+      tp: document.getElementById('pilihanTaliPinggang').value.trim(),
+      kumpulan: document.getElementById('kumpulanSesi').value.trim(),
+      chkSelectedIC: chkSelected,
+      activeSheetTitle: activeSheetTitle,
+      activeKriteria: activeKriteria,
+      activePesilatPenilaian: activePesilatPenilaian,
+      timestamp: new Date().getTime()
     };
 
-    // ==========================================
-    // SISTEM STORAGE & HISTORY SESI
-    // ==========================================
-    function simpanStateLokal(langkah = currentLangkah) {
-      currentLangkah = langkah;
-      
-      // Ambil IC pesilat yang ditanda di Langkah 2 (jika ada)
-      const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
+    localStorage.setItem("SESI_PENGUJI_TERAKHIR", JSON.stringify(dataSesi));
+  }
 
-      const dataSesi = {
-        langkah: currentLangkah,
-        penguji: document.getElementById('namaPenguji').value.trim(),
-        tp: document.getElementById('pilihanTaliPinggang').value.trim(),
-        kumpulan: document.getElementById('kumpulanSesi').value.trim(),
-        chkSelectedIC: chkSelected,
-        activeSheetTitle: activeSheetTitle,
-        activeKriteria: activeKriteria,
-        activePesilatPenilaian: activePesilatPenilaian,
-        timestamp: new Date().getTime()
-      };
+  function semakHistorySesi() {
+    const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
+    if (!saved) return;
 
-      localStorage.setItem("SESI_PENGUJI_TERAKHIR", JSON.stringify(dataSesi));
-    }
-
-    function semakHistorySesi() {
-      const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
-      if (!saved) return;
-
-      try {
-        const state = JSON.parse(saved);
-        if (state && state.penguji && state.tp) {
-          const info = `Penguji: <b>${state.penguji}</b> | Tali Pinggang: <b>${state.tp}</b> | Kumpulan: <b>${state.kumpulan}</b>`;
-          document.getElementById('infoHistory').innerHTML = info;
-          document.getElementById('badgeHistoryStep').innerText = `Terhenti di Langkah ${state.langkah}`;
-          document.getElementById('boxHistory').classList.remove('hidden');
-        }
-      } catch (e) {
-        console.error("Ralat semak history:", e);
-      }
-    }
-
-    function sambungSesiTerakhir() {
-      const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
-      if (!saved) return;
-
+    try {
       const state = JSON.parse(saved);
+      if (state && state.penguji && state.tp) {
+        const info = `Penguji: <b>${state.penguji}</b> | Tali Pinggang: <b>${state.tp}</b> | Kumpulan: <b>${state.kumpulan}</b>`;
+        document.getElementById('infoHistory').innerHTML = info;
+        document.getElementById('badgeHistoryStep').innerText = `Terhenti di Langkah ${state.langkah}`;
+        document.getElementById('boxHistory').classList.remove('hidden');
+      }
+    } catch (e) {
+      console.error("Ralat semak history:", e);
+    }
+  }
 
-      // Isikan borang langkah 1
-      document.getElementById('namaPenguji').value = state.penguji || '';
-      document.getElementById('pilihanTaliPinggang').value = state.tp || '';
-      document.getElementById('kumpulanSesi').value = state.kumpulan || '';
+  function sambungSesiTerakhir() {
+    const saved = localStorage.getItem("SESI_PENGUJI_TERAKHIR");
+    if (!saved) return;
 
-      tapisPesilat(); // Regenerate senarai pesilat berdasarkan TP
+    const state = JSON.parse(saved);
 
-      if (state.langkah === 2) {
-        // Pulihkan tandaan checkbox di Langkah 2
-        if (state.chkSelectedIC && state.chkSelectedIC.length > 0) {
-          const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
-          checkboxes.forEach(cb => {
-            if (state.chkSelectedIC.includes(cb.value)) cb.checked = true;
-          });
-        }
-        keLangkah2();
-      } else if (state.langkah === 3) {
-        // Pulihkan penuh jadual penilaian Langkah 3
-        activeSheetTitle = state.activeSheetTitle;
-        activeKriteria = state.activeKriteria || [];
-        activePesilatPenilaian = state.activePesilatPenilaian || [];
+    document.getElementById('namaPenguji').value = state.penguji || '';
+    document.getElementById('pilihanTaliPinggang').value = state.tp || '';
+    document.getElementById('kumpulanSesi').value = state.kumpulan || '';
+
+    tapisPesilat();
+
+    if (state.langkah === 2) {
+      if (state.chkSelectedIC && state.chkSelectedIC.length > 0) {
+        const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
+        checkboxes.forEach(cb => {
+          if (state.chkSelectedIC.includes(cb.value)) cb.checked = true;
+        });
+      }
+      keLangkah2();
+    } else if (state.langkah === 3) {
+      activeSheetTitle = state.activeSheetTitle;
+      activeKriteria = state.activeKriteria || [];
+      activePesilatPenilaian = state.activePesilatPenilaian || [];
+
+      binaJadualMarkah();
+
+      document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
+      document.getElementById('langkah1').classList.add('hidden');
+      document.getElementById('langkah2').classList.add('hidden');
+      document.getElementById('langkah3').classList.remove('hidden');
+      
+      currentLangkah = 3;
+      paparStatusSave("📂 Sesi Terakhir Dipulihkan");
+      kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
+    }
+
+    document.getElementById('boxHistory').classList.add('hidden');
+  }
+
+  function padamHistorySesi() {
+    localStorage.removeItem("SESI_PENGUJI_TERAKHIR");
+    document.getElementById('boxHistory').classList.add('hidden');
+  }
+
+  function tamatSesiLangkah3() {
+    if (confirm("Adakah anda pasti untuk menamatkan sesi ini & memulakan borang baharu?")) {
+      padamHistorySesi();
+      location.reload();
+    }
+  }
+
+  // ==========================================
+  // LOGIK APLIKASI UTAMA (DITAMBAH BAIK)
+  // ==========================================
+  async function muatDataAsas() {
+    const container = document.getElementById('senaraiPesilatContainer');
+    container.innerHTML = `<p class="col-span-2 text-center text-amber-600 py-6 text-sm font-semibold animate-pulse">⏳ Memuatkan data pesilat...</p>`;
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL);
+      const data = await res.json();
+
+      if (data.success) {
+        dbPesilat = data.pesilat || [];
+        dbTetapan = data.tetapan || {};
+
+        console.log("Data Pesilat Diterima:", dbPesilat); // Semakan log console
+
+        const selectTP = document.getElementById('pilihanTaliPinggang');
+        selectTP.innerHTML = '<option value="">-- Pilih Tali Pinggang --</option>';
+
+        Object.keys(dbTetapan).forEach(tp => {
+          selectTP.innerHTML += `<option value="${tp}">${tp}</option>`;
+        });
+
+        container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
+      } else {
+        container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm">Gagal memuatkan data dari Apps Script.</p>`;
+      }
+    } catch (e) {
+      console.error("Gagal muat data asas:", e);
+      container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm">Ralat sambungan ke pelayan.</p>`;
+    }
+  }
+
+  function tapisPesilat() {
+    const selectElem = document.getElementById('pilihanTaliPinggang');
+    const tpDipilih = selectElem.value.trim().toLowerCase();
+    const container = document.getElementById('senaraiPesilatContainer');
+
+    container.innerHTML = '';
+
+    if (!tpDipilih) {
+      container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
+      return;
+    }
+
+    // PENAMBAHBAIKAN: Menyemak berbilang kemungkinan kunci (peringkat/taliPinggang/kategori)
+    const pesilatTersaring = dbPesilat.filter(p => {
+      const tpDiuji = String(p.peringkat || p.taliPinggang || p.kategori || '').trim().toLowerCase();
+      return tpDiuji === tpDipilih || tpDiuji.includes(tpDipilih) || tpDipilih.includes(tpDiuji);
+    });
+
+    if (pesilatTersaring.length === 0) {
+      container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">
+        Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"<br>
+        <span class="text-xs font-normal text-slate-500">(Pastikan tajuk lajur/peringkat di Google Sheets sepadan)</span>
+      </p>`;
+      return;
+    }
+
+    container.innerHTML = pesilatTersaring.map((p) => `
+      <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
+        <input type="checkbox" name="chkPesilat" value="${p.ic}" onchange="simpanStateLokal()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
+        <div class="overflow-hidden">
+          <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
+          <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang || '-'}</span></p>
+        </div>
+      </label>
+    `).join('');
+  }
+
+  function tandaSemua(status) {
+    const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
+    checkboxes.forEach(cb => cb.checked = status);
+    simpanStateLokal();
+  }
+
+  function keLangkah2() {
+    const penguji = document.getElementById('namaPenguji').value.trim();
+    const tp = document.getElementById('pilihanTaliPinggang').value.trim();
+    const kumpulan = document.getElementById('kumpulanSesi').value.trim();
+
+    if (!penguji || !tp || !kumpulan) {
+      return alert("Sila isi Nama Penguji, Pilih Tali Pinggang Diuji, dan Masukkan Nombor Kumpulan.");
+    }
+
+    document.getElementById('badgeTP').innerText = tp;
+    document.getElementById('langkah1').classList.add('hidden');
+    document.getElementById('langkah3').classList.add('hidden');
+    document.getElementById('langkah2').classList.remove('hidden');
+
+    simpanStateLokal(2);
+    kemaskiniLogPeranti("Langkah 2: Pilih Pesilat");
+  }
+
+  function keLangkah1() {
+    document.getElementById('langkah2').classList.add('hidden');
+    document.getElementById('langkah3').classList.add('hidden');
+    document.getElementById('langkah1').classList.remove('hidden');
+
+    simpanStateLokal(1);
+    kemaskiniLogPeranti("Halaman Utama");
+  }
+
+  async function janaBorangPenilaian() {
+    const penguji = document.getElementById('namaPenguji').value.trim();
+    const tp = document.getElementById('pilihanTaliPinggang').value.trim();
+    const kumpulan = document.getElementById('kumpulanSesi').value.trim();
+
+    const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
+
+    if (chkSelected.length === 0) {
+      return alert("Sila tandakan sekurang-kurangnya seorang pesilat!");
+    }
+
+    activePesilatPenilaian = dbPesilat.filter(p => chkSelected.includes(p.ic)).map(p => ({
+      ...p,
+      markah: []
+    }));
+
+    activeKriteria = dbTetapan[tp] ? dbTetapan[tp].kriteria : [];
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'createSheet',
+          penguji: penguji,
+          taliPinggang: tp,
+          kumpulan: kumpulan,
+          kriteriaActive: activeKriteria,
+          pesilatPilihan: activePesilatPenilaian
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        activeSheetTitle = data.sheetTitle;
 
         binaJadualMarkah();
+        simpanStateLokal(3);
 
         document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
-        document.getElementById('langkah1').classList.add('hidden');
         document.getElementById('langkah2').classList.add('hidden');
         document.getElementById('langkah3').classList.remove('hidden');
-        
-        currentLangkah = 3;
-        paparStatusSave("📂 Sesi Terakhir Dipulihkan");
+
         kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
+      } else {
+        alert("Gagal cipta sheet: " + data.message);
       }
-
-      document.getElementById('boxHistory').classList.add('hidden');
+    } catch (e) {
+      alert("Ralat semasa ciptaan sheet ujian.");
     }
+  }
 
-    function padamHistorySesi() {
-      localStorage.removeItem("SESI_PENGUJI_TERAKHIR");
-      document.getElementById('boxHistory').classList.add('hidden');
-    }
+  function binaJadualMarkah() {
+    const tp = document.getElementById('pilihanTaliPinggang').value.trim();
+    const markahMaksList = dbTetapan[tp]?.markahMaks || [];
 
-    function tamatSesiLangkah3() {
-      if (confirm("Adakah anda pasti untuk menamatkan sesi ini & memulakan borang baharu?")) {
-        padamHistorySesi();
-        location.reload();
-      }
-    }
+    const thead = document.getElementById('headMarkah');
+    const tbody = document.getElementById('bodyMarkah');
 
-    // ==========================================
-    // LOGIK APLIKASI UTAMA
-    // ==========================================
-    async function muatDataAsas() {
-      try {
-        const res = await fetch(APPS_SCRIPT_URL);
-        const data = await res.json();
+    let headHTML = `<tr>
+      <th class="p-2 border text-center w-12">Susun</th>
+      <th class="p-2 border">Nama Pesilat</th>
+      <th class="p-2 border">Gelanggang</th>`;
 
-        if (data.success) {
-          dbPesilat = data.pesilat || [];
-          dbTetapan = data.tetapan || {};
+    activeKriteria.forEach((k, idx) => {
+      const max = markahMaksList[idx] || 10;
+      headHTML += `<th class="p-2 border text-center">${k}<br><span class="text-[9px] text-amber-300">(Maks: ${max})</span></th>`;
+    });
 
-          const selectTP = document.getElementById('pilihanTaliPinggang');
-          selectTP.innerHTML = '<option value="">-- Pilih Tali Pinggang --</option>';
+    headHTML += `<th class="p-2 border text-center">Jumlah</th>
+      <th class="p-2 border text-center w-10">Tindakan</th></tr>`;
+    thead.innerHTML = headHTML;
 
-          Object.keys(dbTetapan).forEach(tp => {
-            selectTP.innerHTML += `<option value="${tp}">${tp}</option>`;
-          });
-        }
-      } catch (e) {
-        console.error("Gagal muat data asas:", e);
-      }
-    }
+    let bodyHTML = "";
+    activePesilatPenilaian.forEach((p, pIdx) => {
+      bodyHTML += `<tr data-ic="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}">
+        <td class="p-1 border text-center whitespace-nowrap">
+          <button onclick="ubahSusunan(${pIdx}, -1)" ${pIdx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔼</button>
+          <button onclick="ubahSusunan(${pIdx}, 1)" ${pIdx === activePesilatPenilaian.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔽</button>
+        </td>
+        <td class="p-2 border font-bold text-slate-800">${p.nama}<br><span class="text-[9px] text-slate-400 font-normal">${p.ic}</span></td>
+        <td class="p-2 border text-slate-600">${p.gelanggang || '-'}</td>`;
 
-    function tapisPesilat() {
-      const selectElem = document.getElementById('pilihanTaliPinggang');
-      const tpDipilih = selectElem.value.trim().toLowerCase();
-      const container = document.getElementById('senaraiPesilatContainer');
-
-      container.innerHTML = '';
-
-      if (!tpDipilih) {
-        container.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-sm">Sila pilih Tali Pinggang di Langkah 1 terlebih dahulu.</p>`;
-        return;
-      }
-
-      const pesilatTersaring = dbPesilat.filter(p => {
-        const tpDiuji = String(p.peringkat || '').trim().replace(/\s+/g, ' ').toLowerCase();
-        return tpDiuji === tpDipilih;
+      activeKriteria.forEach((_, kIdx) => {
+        const max = markahMaksList[kIdx] || 10;
+        const val = p.markah && p.markah[kIdx] !== undefined ? p.markah[kIdx] : 0;
+        bodyHTML += `<td class="p-1 border text-center">
+          <input type="number" min="0" max="${max}" value="${val}" oninput="simpanNilaiInput(${pIdx}, ${kIdx}, this.value)" class="inp-markah-${pIdx} w-12 text-center border p-1 rounded font-bold focus:ring-1 focus:ring-amber-500">
+        </td>`;
       });
 
-      if (pesilatTersaring.length === 0) {
-        container.innerHTML = `<p class="col-span-2 text-center text-red-500 py-6 text-sm font-semibold">Tiada pesilat dijumpai untuk Tali Pinggang Diuji: "${selectElem.value}"</p>`;
-        return;
-      }
+      bodyHTML += `<td class="p-2 border text-center font-black text-amber-700 text-sm" id="jumlah-${pIdx}">0</td>
+        <td class="p-1 border text-center">
+          <button onclick="buangPesilat(${pIdx})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Buang pesilat ini">🗑️</button>
+        </td>
+      </tr>`;
+    });
 
-      container.innerHTML = pesilatTersaring.map((p) => `
-        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-amber-400 cursor-pointer transition">
-          <input type="checkbox" name="chkPesilat" value="${p.ic}" onchange="simpanStateLokal()" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500">
-          <div class="overflow-hidden">
-            <p class="font-bold text-slate-800 text-xs truncate">${p.nama}</p>
-            <p class="text-[10px] text-slate-500">${p.ic} | <span class="text-slate-700 font-semibold">${p.gelanggang}</span></p>
-          </div>
-        </label>
-      `).join('');
+    tbody.innerHTML = bodyHTML;
+    activePesilatPenilaian.forEach((_, pIdx) => kiraJumlah(pIdx));
+  }
+
+  function simpanNilaiInput(pIdx, kIdx, value) {
+    if (!activePesilatPenilaian[pIdx].markah) {
+      activePesilatPenilaian[pIdx].markah = [];
     }
+    activePesilatPenilaian[pIdx].markah[kIdx] = Number(value) || 0;
+    kiraJumlah(pIdx);
 
-    function tandaSemua(status) {
-      const checkboxes = document.querySelectorAll('input[name="chkPesilat"]');
-      checkboxes.forEach(cb => cb.checked = status);
-      simpanStateLokal();
-    }
+    hasUnsavedChanges = true;
+    paparStatusSave("⏳ Ada perubahan (Auto-save dalam 15s)");
 
-    function keLangkah2() {
-      const penguji = document.getElementById('namaPenguji').value.trim();
-      const tp = document.getElementById('pilihanTaliPinggang').value.trim();
-      const kumpulan = document.getElementById('kumpulanSesi').value.trim();
+    simpanStateLokal(3);
+  }
 
-      if (!penguji || !tp || !kumpulan) {
-        return alert("Sila isi Nama Penguji, Pilih Tali Pinggang Diuji, dan Masukkan Nombor Kumpulan.");
-      }
+  function kiraJumlah(pIdx) {
+    const inputs = document.querySelectorAll(`.inp-markah-${pIdx}`);
+    let total = 0;
+    inputs.forEach(inp => total += Number(inp.value) || 0);
+    document.getElementById(`jumlah-${pIdx}`).innerText = total;
+  }
 
-      document.getElementById('badgeTP').innerText = tp;
-      document.getElementById('langkah1').classList.add('hidden');
-      document.getElementById('langkah3').classList.add('hidden');
-      document.getElementById('langkah2').classList.remove('hidden');
+  function ubahSusunan(index, arah) {
+    const barisBaru = index + arah;
+    if (barisBaru < 0 || barisBaru >= activePesilatPenilaian.length) return;
 
-      simpanStateLokal(2);
-      kemaskiniLogPeranti("Langkah 2: Pilih Pesilat");
-    }
+    const temp = activePesilatPenilaian[index];
+    activePesilatPenilaian[index] = activePesilatPenilaian[barisBaru];
+    activePesilatPenilaian[barisBaru] = temp;
 
-    function keLangkah1() {
-      document.getElementById('langkah2').classList.add('hidden');
-      document.getElementById('langkah3').classList.add('hidden');
-      document.getElementById('langkah1').classList.remove('hidden');
+    binaJadualMarkah();
+    simpanStateLokal(3);
+    hasUnsavedChanges = true;
+    simpanMarkahToGS(false);
+  }
 
-      simpanStateLokal(1);
-      kemaskiniLogPeranti("Halaman Utama");
-    }
-
-    async function janaBorangPenilaian() {
-      const penguji = document.getElementById('namaPenguji').value.trim();
-      const tp = document.getElementById('pilihanTaliPinggang').value.trim();
-      const kumpulan = document.getElementById('kumpulanSesi').value.trim();
-
-      const chkSelected = Array.from(document.querySelectorAll('input[name="chkPesilat"]:checked')).map(cb => cb.value);
-
-      if (chkSelected.length === 0) {
-        return alert("Sila tandakan sekurang-kurangnya seorang pesilat!");
-      }
-
-      activePesilatPenilaian = dbPesilat.filter(p => chkSelected.includes(p.ic)).map(p => ({
-        ...p,
-        markah: []
-      }));
-
-      activeKriteria = dbTetapan[tp] ? dbTetapan[tp].kriteria : [];
-
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'createSheet',
-            penguji: penguji,
-            taliPinggang: tp,
-            kumpulan: kumpulan,
-            kriteriaActive: activeKriteria,
-            pesilatPilihan: activePesilatPenilaian
-          })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          activeSheetTitle = data.sheetTitle;
-
-          binaJadualMarkah();
-          simpanStateLokal(3);
-
-          document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
-          document.getElementById('langkah2').classList.add('hidden');
-          document.getElementById('langkah3').classList.remove('hidden');
-
-          kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
-        } else {
-          alert("Gagal cipta sheet: " + data.message);
-        }
-      } catch (e) {
-        alert("Ralat semasa ciptaan sheet ujian.");
-      }
-    }
-
-    function binaJadualMarkah() {
-      const tp = document.getElementById('pilihanTaliPinggang').value.trim();
-      const markahMaksList = dbTetapan[tp]?.markahMaks || [];
-
-      const thead = document.getElementById('headMarkah');
-      const tbody = document.getElementById('bodyMarkah');
-
-      let headHTML = `<tr>
-        <th class="p-2 border text-center w-12">Susun</th>
-        <th class="p-2 border">Nama Pesilat</th>
-        <th class="p-2 border">Gelanggang</th>`;
-
-      activeKriteria.forEach((k, idx) => {
-        const max = markahMaksList[idx] || 10;
-        headHTML += `<th class="p-2 border text-center">${k}<br><span class="text-[9px] text-amber-300">(Maks: ${max})</span></th>`;
-      });
-
-      headHTML += `<th class="p-2 border text-center">Jumlah</th>
-        <th class="p-2 border text-center w-10">Tindakan</th></tr>`;
-      thead.innerHTML = headHTML;
-
-      let bodyHTML = "";
-      activePesilatPenilaian.forEach((p, pIdx) => {
-        bodyHTML += `<tr data-ic="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}">
-          <td class="p-1 border text-center whitespace-nowrap">
-            <button onclick="ubahSusunan(${pIdx}, -1)" ${pIdx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔼</button>
-            <button onclick="ubahSusunan(${pIdx}, 1)" ${pIdx === activePesilatPenilaian.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-amber-500 font-bold px-1"'}>🔽</button>
-          </td>
-          <td class="p-2 border font-bold text-slate-800">${p.nama}<br><span class="text-[9px] text-slate-400 font-normal">${p.ic}</span></td>
-          <td class="p-2 border text-slate-600">${p.gelanggang}</td>`;
-
-        activeKriteria.forEach((_, kIdx) => {
-          const max = markahMaksList[kIdx] || 10;
-          const val = p.markah && p.markah[kIdx] !== undefined ? p.markah[kIdx] : 0;
-          bodyHTML += `<td class="p-1 border text-center">
-            <input type="number" min="0" max="${max}" value="${val}" oninput="simpanNilaiInput(${pIdx}, ${kIdx}, this.value)" class="inp-markah-${pIdx} w-12 text-center border p-1 rounded font-bold focus:ring-1 focus:ring-amber-500">
-          </td>`;
-        });
-
-        bodyHTML += `<td class="p-2 border text-center font-black text-amber-700 text-sm" id="jumlah-${pIdx}">0</td>
-          <td class="p-1 border text-center">
-            <button onclick="buangPesilat(${pIdx})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Buang pesilat ini">🗑️</button>
-          </td>
-        </tr>`;
-      });
-
-      tbody.innerHTML = bodyHTML;
-      activePesilatPenilaian.forEach((_, pIdx) => kiraJumlah(pIdx));
-    }
-
-    function simpanNilaiInput(pIdx, kIdx, value) {
-      if (!activePesilatPenilaian[pIdx].markah) {
-        activePesilatPenilaian[pIdx].markah = [];
-      }
-      activePesilatPenilaian[pIdx].markah[kIdx] = Number(value) || 0;
-      kiraJumlah(pIdx);
-
-      hasUnsavedChanges = true;
-      paparStatusSave("⏳ Ada perubahan (Auto-save dalam 15s)");
-
-      simpanStateLokal(3);
-    }
-
-    function kiraJumlah(pIdx) {
-      const inputs = document.querySelectorAll(`.inp-markah-${pIdx}`);
-      let total = 0;
-      inputs.forEach(inp => total += Number(inp.value) || 0);
-      document.getElementById(`jumlah-${pIdx}`).innerText = total;
-    }
-
-    function ubahSusunan(index, arah) {
-      const barisBaru = index + arah;
-      if (barisBaru < 0 || barisBaru >= activePesilatPenilaian.length) return;
-
-      const temp = activePesilatPenilaian[index];
-      activePesilatPenilaian[index] = activePesilatPenilaian[barisBaru];
-      activePesilatPenilaian[barisBaru] = temp;
-
+  function buangPesilat(index) {
+    const nama = activePesilatPenilaian[index].nama;
+    if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
+      activePesilatPenilaian.splice(index, 1);
       binaJadualMarkah();
       simpanStateLokal(3);
       hasUnsavedChanges = true;
       simpanMarkahToGS(false);
     }
+  }
 
-    function buangPesilat(index) {
-      const nama = activePesilatPenilaian[index].nama;
-      if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
-        activePesilatPenilaian.splice(index, 1);
-        binaJadualMarkah();
-        simpanStateLokal(3);
-        hasUnsavedChanges = true;
-        simpanMarkahToGS(false);
-      }
+  function bukaModalTambahPesilat() {
+    const tp = document.getElementById('pilihanTaliPinggang').value.trim().toLowerCase();
+    const select = document.getElementById('selectExtraPesilat');
+
+    const icWujud = activePesilatPenilaian.map(p => p.ic);
+    const bakiPesilat = dbPesilat.filter(p => {
+      const tpDiuji = String(p.peringkat || p.taliPinggang || p.kategori || '').trim().toLowerCase();
+      return (tpDiuji === tp || tpDiuji.includes(tp)) && !icWujud.includes(p.ic);
+    });
+
+    if (bakiPesilat.length === 0) {
+      return alert("Tiada lagi pesilat tambahan bagi tali pinggang ini.");
     }
 
-    function bukaModalTambahPesilat() {
-      const tp = document.getElementById('pilihanTaliPinggang').value.trim().toLowerCase();
-      const select = document.getElementById('selectExtraPesilat');
+    select.innerHTML = bakiPesilat.map(p => `<option value="${p.ic}">${p.nama} (${p.gelanggang || '-'})</option>`).join('');
+    document.getElementById('modalTambah').classList.remove('hidden');
+  }
 
-      const icWujud = activePesilatPenilaian.map(p => p.ic);
-      const bakiPesilat = dbPesilat.filter(p => {
-        const tpDiuji = String(p.peringkat || '').trim().replace(/\s+/g, ' ').toLowerCase();
-        return tpDiuji === tp && !icWujud.includes(p.ic);
+  function tutupModalTambah() {
+    document.getElementById('modalTambah').classList.add('hidden');
+  }
+
+  function sahkanTambahPesilat() {
+    const icSelected = document.getElementById('selectExtraPesilat').value;
+    const pesilatObj = dbPesilat.find(p => p.ic === icSelected);
+
+    if (pesilatObj) {
+      activePesilatPenilaian.push({
+        ...pesilatObj,
+        markah: []
+      });
+      binaJadualMarkah();
+      tutupModalTambah();
+      simpanStateLokal(3);
+      hasUnsavedChanges = true;
+      simpanMarkahToGS(false);
+    }
+  }
+
+  async function simpanMarkahToGS(isManual = false) {
+    if (activePesilatPenilaian.length === 0) {
+      if (isManual) alert("Sila pastikan terdapat sekurang-kurangnya seorang pesilat dalam jadual.");
+      return;
+    }
+
+    if (isSaving) return;
+
+    isSaving = true;
+    paparStatusSave("🔄 Menyimpan...");
+
+    const rows = document.querySelectorAll('#bodyMarkah tr');
+    let dataMarkah = [];
+
+    rows.forEach((tr, pIdx) => {
+      const nama = tr.getAttribute('data-nama');
+      const ic = tr.getAttribute('data-ic');
+      const gelanggang = tr.getAttribute('data-gelanggang');
+
+      const inputs = tr.querySelectorAll(`input[type="number"]`);
+      let markahArray = [];
+      inputs.forEach(inp => markahArray.push(Number(inp.value) || 0));
+
+      const jumlah = Number(document.getElementById(`jumlah-${pIdx}`).innerText) || 0;
+
+      dataMarkah.push({
+        nama: nama,
+        ic: ic,
+        gelanggang: gelanggang,
+        markahArray: markahArray,
+        jumlah: jumlah
+      });
+    });
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'simpanMarkah',
+          sheetTitle: activeSheetTitle,
+          dataMarkah: dataMarkah
+        })
       });
 
-      if (bakiPesilat.length === 0) {
-        return alert("Tiada lagi pesilat tambahan bagi tali pinggang ini.");
-      }
-
-      select.innerHTML = bakiPesilat.map(p => `<option value="${p.ic}">${p.nama} (${p.gelanggang})</option>`).join('');
-      document.getElementById('modalTambah').classList.remove('hidden');
-    }
-
-    function tutupModalTambah() {
-      document.getElementById('modalTambah').classList.add('hidden');
-    }
-
-    function sahkanTambahPesilat() {
-      const icSelected = document.getElementById('selectExtraPesilat').value;
-      const pesilatObj = dbPesilat.find(p => p.ic === icSelected);
-
-      if (pesilatObj) {
-        activePesilatPenilaian.push({
-          ...pesilatObj,
-          markah: []
-        });
-        binaJadualMarkah();
-        tutupModalTambah();
+      const data = await res.json();
+      if (data.success) {
+        hasUnsavedChanges = false;
         simpanStateLokal(3);
-        hasUnsavedChanges = true;
-        simpanMarkahToGS(false);
+        paparStatusSave("☁️ Disimpan ke Sheet");
+        if (isManual) alert("✅ " + data.message);
+      } else {
+        paparStatusSave("⚠️ Ralat Simpan");
+        if (isManual) alert("Gagal simpan: " + data.message);
       }
+    } catch (e) {
+      paparStatusSave("❌ Sambungan Terputus");
+      if (isManual) alert("Ralat semasa menyimpan markah.");
+    } finally {
+      isSaving = false;
     }
+  }
 
-    async function simpanMarkahToGS(isManual = false) {
-      if (activePesilatPenilaian.length === 0) {
-        if (isManual) alert("Sila pastikan terdapat sekurang-kurangnya seorang pesilat dalam jadual.");
-        return;
-      }
+  function paparStatusSave(mesej) {
+    const el = document.getElementById('statusSave');
+    el.classList.remove('hidden');
+    el.innerText = mesej;
+  }
 
-      if (isSaving) return;
+  async function kemaskiniLogPeranti(peringkatTekini) {
+    const penguji = document.getElementById('namaPenguji').value.trim();
 
-      isSaving = true;
-      paparStatusSave("🔄 Menyimpan...");
-
-      const rows = document.querySelectorAll('#bodyMarkah tr');
-      let dataMarkah = [];
-
-      rows.forEach((tr, pIdx) => {
-        const nama = tr.getAttribute('data-nama');
-        const ic = tr.getAttribute('data-ic');
-        const gelanggang = tr.getAttribute('data-gelanggang');
-
-        const inputs = tr.querySelectorAll(`input[type="number"]`);
-        let markahArray = [];
-        inputs.forEach(inp => markahArray.push(Number(inp.value) || 0));
-
-        const jumlah = Number(document.getElementById(`jumlah-${pIdx}`).innerText) || 0;
-
-        dataMarkah.push({
-          nama: nama,
-          ic: ic,
-          gelanggang: gelanggang,
-          markahArray: markahArray,
-          jumlah: jumlah
-        });
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'updateDeviceLog',
+          deviceId: DEVICE_ID,
+          namaPenguji: penguji,
+          gelanggang: "-",
+          peringkat: peringkatTekini
+        })
       });
+    } catch (e) {}
+  }
 
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'simpanMarkah',
-            sheetTitle: activeSheetTitle,
-            dataMarkah: dataMarkah
-          })
-        });
+  async function semakStatusPerantiDanNotif() {
+    try {
+      const resLog = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'updateDeviceLog',
+          deviceId: DEVICE_ID,
+          namaPenguji: document.getElementById('namaPenguji').value.trim(),
+          gelanggang: "-",
+          peringkat: activeSheetTitle ? `Menilai (${activeSheetTitle})` : "Aktif"
+        })
+      });
+      const dataLog = await resLog.json();
 
-        const data = await res.json();
-        if (data.success) {
-          hasUnsavedChanges = false;
-          simpanStateLokal(3);
-          paparStatusSave("☁️ Disimpan ke Sheet");
-          if (isManual) alert("✅ " + data.message);
-        } else {
-          paparStatusSave("⚠️ Ralat Simpan");
-          if (isManual) alert("Gagal simpan: " + data.message);
-        }
-      } catch (e) {
-        paparStatusSave("❌ Sambungan Terputus");
-        if (isManual) alert("Ralat semasa menyimpan markah.");
-      } finally {
-        isSaving = false;
+      if (dataLog.forceReset) {
+        padamHistorySesi();
+        alert("⚠️ Sesi anda telah direset oleh Urus Setia.");
+        location.reload();
       }
-    }
 
-    function paparStatusSave(mesej) {
-      const el = document.getElementById('statusSave');
-      el.classList.remove('hidden');
-      el.innerText = mesej;
-    }
+      const resNotif = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
+      const dataNotif = await resNotif.json();
 
-    async function kemaskiniLogPeranti(peringkatTekini) {
-      const penguji = document.getElementById('namaPenguji').value.trim();
-
-      try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'updateDeviceLog',
-            deviceId: DEVICE_ID,
-            namaPenguji: penguji,
-            gelanggang: "-",
-            peringkat: peringkatTekini
-          })
-        });
-      } catch (e) {}
-    }
-
-    async function semakStatusPerantiDanNotif() {
-      try {
-        const resLog = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'updateDeviceLog',
-            deviceId: DEVICE_ID,
-            namaPenguji: document.getElementById('namaPenguji').value.trim(),
-            gelanggang: "-",
-            peringkat: activeSheetTitle ? `Menilai (${activeSheetTitle})` : "Aktif"
-          })
-        });
-        const dataLog = await resLog.json();
-
-        if (dataLog.forceReset) {
-          padamHistorySesi();
-          alert("⚠️ Sesi anda telah direset oleh Urus Setia.");
-          location.reload();
+      if (dataNotif.success && dataNotif.notif) {
+        if (dataNotif.notif.id !== lastNotifId) {
+          lastNotifId = dataNotif.notif.id;
+          document.getElementById('notifMesej').innerText = dataNotif.notif.message;
+          document.getElementById('notifBox').classList.remove('hidden');
         }
+      }
+    } catch (e) {}
+  }
 
-        const resNotif = await fetch(APPS_SCRIPT_URL + "?action=getNotif");
-        const dataNotif = await resNotif.json();
-
-        if (dataNotif.success && dataNotif.notif) {
-          if (dataNotif.notif.id !== lastNotifId) {
-            lastNotifId = dataNotif.notif.id;
-            document.getElementById('notifMesej').innerText = dataNotif.notif.message;
-            document.getElementById('notifBox').classList.remove('hidden');
-          }
-        }
-      } catch (e) {}
-    }
-
-    function tutupNotif() {
-      document.getElementById('notifBox').classList.add('hidden');
-    }
-  </script>
+  function tutupNotif() {
+    document.getElementById('notifBox').classList.add('hidden');
+  }
+</script>
 </body>
 </html>
