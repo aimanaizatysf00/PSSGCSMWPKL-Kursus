@@ -49,9 +49,19 @@
 
     <!-- JADUAL LOG PERANTI PENGUJI -->
     <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
+      <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-3">
         <h2 class="text-lg font-bold text-gray-800">📱 Log & Status Telefon Penguji (Real-Time)</h2>
-        <span class="text-xs text-gray-500">Dikemaskini automatik setiap 5 saat</span>
+        
+        <!-- BUTANG KAWALAN PUKAL (BULK ACTIONS) DI ATAS KANAN -->
+        <div class="flex items-center gap-2">
+          <button onclick="resetSemuaSesi()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow flex items-center gap-1" title="Reset Semua Sesi Penguji">
+            🔄 Reset Semua
+          </button>
+          <button onclick="padamSemuaLog()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow flex items-center gap-1" title="Padam Semua Log Peranti">
+            🗑️ Padam Semua Log
+          </button>
+          <span class="text-xs text-gray-400 ml-1 hidden md:inline">| Dikemaskini setiap 5s</span>
+        </div>
       </div>
 
       <div class="overflow-x-auto border rounded-lg">
@@ -388,6 +398,48 @@
         }
       } catch(e) {
         alert("Ralat semasa memadam log peranti.");
+      }
+    }
+
+    // FUNGSI BARU: RESET SEMUA SESI
+    async function resetSemuaSesi() {
+      if (!confirm("⚠️ AMARAN: Adakah anda pasti mahu mereset SEMUA sesi peranti yang sedang aktif? Semua penguji akan dihantar semula ke Skrin Utama.")) return;
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'resetAllDevices' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Semua sesi peranti berjaya direset.");
+          muatLogAdmin();
+        } else {
+          alert("Gagal: " + (result.message || "Gagal mereset semua peranti."));
+        }
+      } catch(e) {
+        alert("Ralat semasa mereset semua peranti.");
+      }
+    }
+
+    // FUNGSI BARU: PADAM SEMUA LOG
+    async function padamSemuaLog() {
+      if (!confirm("⚠️ AMARAN: Adakah anda pasti mahu memadam SEMUA log peranti daripada senarai? Tindakan ini tidak boleh diundurkan.")) return;
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'deleteAllDeviceLogs' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Semua log peranti berjaya dipadam.");
+          muatLogAdmin();
+        } else {
+          alert("Gagal: " + (result.message || "Gagal memadam semua log."));
+        }
+      } catch(e) {
+        alert("Ralat semasa memadam semua log peranti.");
       }
     }
   </script>
