@@ -122,20 +122,27 @@
       }).join('');
     }
 
-    // HANTAR NOTIFIKASI POP-UP
+    // HANTAR NOTIFIKASI POP-UP AUTOMATIK DENGAN ID UNIK (TIMESTAMP)
     async function hantarNotif() {
       const mesej = document.getElementById('mesejNotif').value.trim();
       if (!mesej) return alert("Sila masukkan mesej.");
+
+      // Jana ID Unik berasaskan timestamp masa hantar
+      const uniqueNotifId = "NOTIF_" + Date.now();
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'sendNotif', message: mesej })
+          body: JSON.stringify({ 
+            action: 'sendNotif', 
+            message: mesej,
+            id: uniqueNotifId 
+          })
         });
         const result = await res.json();
         if (result.success) {
-          alert("✅ " + result.message);
+          alert("✅ " + (result.message || "Pengumuman berjaya dihantar."));
           document.getElementById('mesejNotif').value = "";
         }
       } catch(e) {
