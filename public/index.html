@@ -44,7 +44,7 @@
   <div id="pesilatModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="text-lg font-bold text-slate-800">Pengurusan Pesilat Dalam Sesi</h3>
+        <h3 class="text-lg font-bold text-slate-800">Pengurusan & Susunan Pesilat Dalam Sesi</h3>
         <button onclick="tutupModalPesilat()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
       </div>
       
@@ -54,7 +54,8 @@
 
       <div id="modalPesilatContainer" class="flex-1 overflow-y-auto space-y-2 border rounded-xl p-3 bg-slate-50 min-h-[200px]"></div>
 
-      <div class="flex justify-end pt-2 border-t">
+      <div class="flex justify-between items-center pt-2 border-t">
+        <span class="text-xs text-gray-500">Gunakan butang ⬆/⬇ untuk susun giliran pesilat terpilih.</span>
         <button onclick="kemaskiniPesilatSesi()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition text-sm">
           Simpan & Kemaskini Borang
         </button>
@@ -78,25 +79,6 @@
 
     <!-- LANGKAH 1 -->
     <section id="step1" class="bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-slate-200">
-      
-      <!-- KOTAK SAMBUNG SESI TERDAHULU (PILIHAN 3) -->
-      <div id="boxResumeSession" class="hidden bg-amber-50 border-2 border-amber-400 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div>
-          <h3 class="font-bold text-amber-900 text-sm flex items-center gap-2">
-            <span>🔄</span> Sesi Penilaian Terdahulu Dikesan
-          </h3>
-          <p id="infoResumeText" class="text-xs text-amber-800 mt-0.5"></p>
-        </div>
-        <div class="flex gap-2 w-full md:w-auto">
-          <button onclick="padamDrafSesi()" class="px-3 py-1.5 text-xs text-red-600 border border-red-300 hover:bg-red-50 rounded-lg font-semibold">
-            Padam & Mula Baru
-          </button>
-          <button onclick="sambungSesiSaved()" class="px-4 py-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow">
-            Sambung Sesi
-          </button>
-        </div>
-      </div>
-
       <div class="border-b pb-3 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
           <span class="bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span> 
@@ -163,24 +145,26 @@
           <h2 class="text-lg font-bold text-slate-800">Borang Markah Penilaian</h2>
           <p id="infoSheetBorang" class="text-xs text-amber-600 font-bold font-mono"></p>
         </div>
-        <!-- PERUBAHAN 1: HANYA ADA BUTANG TAMBAH/BUANG PESILAT KAT ATAS KANAN -->
         <div class="flex gap-2 flex-wrap">
           <button onclick="bukaModalPesilat()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow">
             ➕/➖ Urus Pesilat
+          </button>
+          <button onclick="simpanMarkah(false)" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow">
+            🔄 Kemaskini
           </button>
         </div>
       </div>
 
       <div id="papanPenilaianContainer" class="space-y-3 overflow-x-auto pb-4"></div>
 
-      <!-- PERUBAHAN 2: HANYA ADA KOTAK KEMASKINI KAT KANAN BAWAH -->
-      <div class="flex justify-between pt-4 border-t gap-2 flex-wrap">
-        <button onclick="tunjukLangkah(2)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-5 py-2.5 rounded-xl transition text-sm">
-          ⬅ Edit Pesilat
-        </button>
+      <!-- DIBUANG: Butang Edit Pesilat di sebelah kiri -->
+      <div class="flex justify-end pt-4 border-t gap-2 flex-wrap">
         <div class="flex gap-2">
           <button onclick="simpanMarkah(false)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
             🔄 Kemaskini
+          </button>
+          <button onclick="simpanMarkah(true)" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xl transition flex items-center gap-2 text-sm">
+            ✅ Hantar Markah Akhir
           </button>
         </div>
       </div>
@@ -212,7 +196,7 @@
     window.onload = async function() {
       document.getElementById('devIdTag').innerText = "ID: " + DEVICE_ID;
       await muatDataAwal();
-      semakDrafSesiTerdahulu();
+      pulihkanSesiTempatan();
       setInterval(pingStatusAndNotif, 5000);
     };
 
@@ -260,43 +244,13 @@
         opt.textContent = tp;
         select.appendChild(opt);
       });
-    }
-
-    /* PERUBAHAN 3: KAWALAN SAMBUNG SESI TERDAHULU KAT PAGE 1 */
-    function semakDrafSesiTerdahulu() {
+      
       const saved = localStorage.getItem('SILAT_DRAFT_SESSION');
-      if (!saved) return;
-
-      try {
-        const draft = JSON.parse(saved);
-        if (draft && draft.penguji && draft.tp) {
-          const box = document.getElementById('boxResumeSession');
-          const info = document.getElementById('infoResumeText');
-          
-          info.innerText = `Penguji: ${draft.penguji} | Peringkat: ${draft.tp} | Pesilat: ${draft.pesilat ? draft.pesilat.length : 0} orang`;
-          box.classList.remove('hidden');
-
-          // Masukkan awal nilai input asas
-          document.getElementById('namaPenguji').value = draft.penguji || '';
-          document.getElementById('pilihTaliPinggang').value = draft.tp || '';
-          document.getElementById('kumpulanUjian').value = draft.kump || '';
-        }
-      } catch(e) {}
-    }
-
-    function sambungSesiSaved() {
-      pulihkanSesiTempatan();
-    }
-
-    function padamDrafSesi() {
-      if (confirm("Adakah anda pasti untuk memadam sesi ini dan memulakan ujian baru?")) {
-        localStorage.removeItem('SILAT_DRAFT_SESSION');
-        document.getElementById('boxResumeSession').classList.add('hidden');
-        document.getElementById('namaPenguji').value = '';
-        document.getElementById('pilihTaliPinggang').value = '';
-        document.getElementById('kumpulanUjian').value = '';
-        PESILAT_TERPILIH = [];
-        CURRENT_SHEET_TITLE = "";
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          if (draft.tp) select.value = draft.tp;
+        } catch(e) {}
       }
     }
 
@@ -614,6 +568,7 @@
       document.getElementById('pesilatModal').classList.add('hidden');
     }
 
+    /* PENGURUSAN PESILAT & SUSUNAN (NAIK/TURUN) */
     function tapisPesilatModal() {
       const tp = document.getElementById('pilihTaliPinggang').value;
       const keyword = document.getElementById('searchPesilatInput').value.toLowerCase().trim();
@@ -633,27 +588,52 @@
       }
 
       container.innerHTML = senarai.map(p => {
-        const isSelected = PESILAT_TERPILIH.some(pt => pt.ic === p.ic);
+        const idxDalamTerpilih = PESILAT_TERPILIH.findIndex(pt => pt.ic === p.ic);
+        const isSelected = idxDalamTerpilih !== -1;
+
         return `
-          <label class="flex items-center justify-between p-2.5 bg-white border rounded-lg hover:bg-amber-50 cursor-pointer">
-            <div class="text-xs">
-              <div class="font-bold text-gray-800">${p.nama}</div>
-              <div class="text-gray-500">${p.gelanggang} | IC: ${p.ic}</div>
-            </div>
-            <input type="checkbox" class="chkModalPesilat w-4 h-4 text-amber-600 rounded" value="${p.ic}" data-nama="${p.nama}" data-gelanggang="${p.gelanggang}" ${isSelected ? 'checked' : ''}>
-          </label>
+          <div class="flex items-center justify-between p-2.5 bg-white border rounded-lg hover:bg-amber-50 gap-2">
+            <label class="flex items-center gap-3 cursor-pointer flex-1">
+              <input type="checkbox" onchange="togglePilihPesilatModal('${p.ic}', '${p.nama}', '${p.gelanggang}', this.checked)" class="w-4 h-4 text-amber-600 rounded" ${isSelected ? 'checked' : ''}>
+              <div class="text-xs">
+                <div class="font-bold text-gray-800">${p.nama}</div>
+                <div class="text-gray-500">${p.gelanggang} | IC: ${p.ic}</div>
+              </div>
+            </label>
+            ${isSelected ? `
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="gerakPesilat(${idxDalamTerpilih}, -1)" class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-xs font-bold" title="Alih Ke Atas">⬆</button>
+                <button type="button" onclick="gerakPesilat(${idxDalamTerpilih}, 1)" class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-xs font-bold" title="Alih Ke Bawah">⬇</button>
+              </div>
+            ` : ''}
+          </div>
         `;
       }).join('');
     }
 
-    function kemaskiniPesilatSesi() {
-      const chks = document.querySelectorAll('.chkModalPesilat:checked');
-      PESILAT_TERPILIH = Array.from(chks).map(c => ({
-        ic: c.value,
-        nama: c.getAttribute('data-nama'),
-        gelanggang: c.getAttribute('data-gelanggang')
-      }));
+    function togglePilihPesilatModal(ic, nama, gelanggang, isChecked) {
+      if (isChecked) {
+        if (!PESILAT_TERPILIH.some(p => p.ic === ic)) {
+          PESILAT_TERPILIH.push({ ic, nama, gelanggang });
+        }
+      } else {
+        PESILAT_TERPILIH = PESILAT_TERPILIH.filter(p => p.ic !== ic);
+      }
+      tapisPesilatModal();
+    }
 
+    function gerakPesilat(index, arah) {
+      const newIndex = index + arah;
+      if (newIndex < 0 || newIndex >= PESILAT_TERPILIH.length) return;
+      
+      const temp = PESILAT_TERPILIH[index];
+      PESILAT_TERPILIH[index] = PESILAT_TERPILIH[newIndex];
+      PESILAT_TERPILIH[newIndex] = temp;
+      
+      tapisPesilatModal();
+    }
+
+    function kemaskiniPesilatSesi() {
       const tp = document.getElementById('pilihTaliPinggang').value;
       const kriteriaObj = DB_TETAPAN[tp] || { kriteria: ["Penilaian Umum"], markahMaks: [100] };
       
@@ -718,8 +698,6 @@
             }
 
             tunjukLangkah(draft.langkah, false);
-          } else {
-            keLangkah2();
           }
         }
       } catch(e) {}
