@@ -112,9 +112,14 @@
           <p id="subTajukSheet" class="text-xs text-slate-500 mt-1 font-mono"></p>
         </div>
 
-        <button onclick="bukaModalTambahPesilat()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1">
-          ➕ Tambah Pesilat
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="tamatSesiLangkah3()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition">
+            🔄 Sesi Baru
+          </button>
+          <button onclick="bukaModalTambahPesilat()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1">
+            ➕ Tambah Pesilat
+          </button>
+        </div>
       </div>
 
       <!-- JADUAL INPUT MARKAH -->
@@ -177,8 +182,10 @@
     let hasUnsavedChanges = false;
     let isSaving = false;
 
-    window.onload = function() {
-      muatDataAsas();
+    window.onload = async function() {
+      await muatDataAsas();
+      semakDanPulihkanSesi(); // Auto restore jika page ter-refresh
+
       setInterval(semakStatusPerantiDanNotif, 4000);
 
       // PEMASA AUTO-SAVE: Berjalan secara automatik setiap 15 saat
@@ -188,6 +195,65 @@
         }
       }, 15000); // 15000ms = 15 Saat
     };
+
+    // ==========================================
+    // SISTEM STATE RESTORE (PERSISTENCE)
+    // ==========================================
+    function simpanStatePenilaian() {
+      if (!activeSheetTitle) return;
+
+      const stateData = {
+        penguji: document.getElementById('namaPenguji').value.trim(),
+        tp: document.getElementById('pilihanTaliPinggang').value.trim(),
+        kumpulan: document.getElementById('kumpulanSesi').value.trim(),
+        activeSheetTitle: activeSheetTitle,
+        activeKriteria: activeKriteria,
+        activePesilatPenilaian: activePesilatPenilaian
+      };
+
+      localStorage.setItem("SESI_PENILAIAN_AKTIF", JSON.stringify(stateData));
+    }
+
+    function padamStatePenilaian() {
+      localStorage.removeItem("SESI_PENILAIAN_AKTIF");
+    }
+
+    function semakDanPulihkanSesi() {
+      const savedState = localStorage.getItem("SESI_PENILAIAN_AKTIF");
+      if (!savedState) return;
+
+      try {
+        const state = JSON.parse(savedState);
+        if (state && state.activeSheetTitle) {
+          document.getElementById('namaPenguji').value = state.penguji || '';
+          document.getElementById('pilihanTaliPinggang').value = state.tp || '';
+          document.getElementById('kumpulanSesi').value = state.kumpulan || '';
+
+          activeSheetTitle = state.activeSheetTitle;
+          activeKriteria = state.activeKriteria || [];
+          activePesilatPenilaian = state.activePesilatPenilaian || [];
+
+          binaJadualMarkah();
+
+          document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
+          document.getElementById('langkah1').classList.add('hidden');
+          document.getElementById('langkah2').classList.add('hidden');
+          document.getElementById('langkah3').classList.remove('hidden');
+
+          paparStatusSave("📂 Sesi Terakhir Dipulihkan");
+          kemaskiniLogPeranti(`Menilai (${activeSheetTitle})`);
+        }
+      } catch (e) {
+        console.error("Gagal pulihkan sesi:", e);
+      }
+    }
+
+    function tamatSesiLangkah3() {
+      if (confirm("Adakah anda pasti untuk menamatkan sesi ini & memulakan borang baharu?")) {
+        padamStatePenilaian();
+        location.reload();
+      }
+    }
 
     // 1. MUAT DATA ASAS
     async function muatDataAsas() {
@@ -311,9 +377,10 @@
         const data = await res.json();
         if (data.success) {
           activeSheetTitle = data.sheetTitle;
-          
+
           binaJadualMarkah();
-          
+          simpanStatePenilaian(); // Simpan State terus selepas sheet terjana
+
           document.getElementById('subTajukSheet').innerText = `Sheet: ${activeSheetTitle}`;
           document.getElementById('langkah2').classList.add('hidden');
           document.getElementById('langkah3').classList.remove('hidden');
@@ -389,6 +456,9 @@
       // Tanda bahawa terdapat perubahan yang belum disimpan
       hasUnsavedChanges = true;
       paparStatusSave("⏳ Ada perubahan (Auto-save dalam 15s)");
+
+      // Simpan lokal terupdate secara spontan
+      simpanStatePenilaian();
     }
 
     function kiraJumlah(pIdx) {
@@ -407,6 +477,7 @@
       activePesilatPenilaian[barisBaru] = temp;
 
       binaJadualMarkah();
+      simpanStatePenilaian();
       hasUnsavedChanges = true;
       simpanMarkahToGS(false);
     }
@@ -416,6 +487,7 @@
       if (confirm(`Adakah anda pasti untuk membuang "${nama}" daripada jadual penilaian ini?`)) {
         activePesilatPenilaian.splice(index, 1);
         binaJadualMarkah();
+        simpanStatePenilaian();
         hasUnsavedChanges = true;
         simpanMarkahToGS(false);
       }
@@ -454,6 +526,7 @@
         });
         binaJadualMarkah();
         tutupModalTambah();
+        simpanStatePenilaian();
         hasUnsavedChanges = true;
         simpanMarkahToGS(false);
       }
@@ -508,6 +581,7 @@
         const data = await res.json();
         if (data.success) {
           hasUnsavedChanges = false; // Reset balik status sebab dah berjaya simpan
+          simpanStatePenilaian();   // Simpan versi terkini ke LocalStorage
           paparStatusSave("☁️ Disimpan ke Sheet");
           if (isManual) alert("✅ " + data.message);
         } else {
@@ -563,6 +637,7 @@
         const dataLog = await resLog.json();
 
         if (dataLog.forceReset) {
+          padamStatePenilaian();
           alert("⚠️ Sesi anda telah direset oleh Urus Setia.");
           location.reload();
         }
