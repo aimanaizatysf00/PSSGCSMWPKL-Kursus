@@ -65,7 +65,7 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx722yVopyvwUUhs4GhY_hTHlMgbYhYrXaSE-4hJSCBBVtr2CqZLIrIqganrXS2BNKCvg/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrxrqRztQjuSxpb-lLv-33yi_WBO1pkAY7wmmAox5cFRgMyWdWahziFLtmIfPJaw5olQ/exec"; 
 
     window.onload = function() {
       muatLogAdmin();
@@ -99,26 +99,24 @@
         const item = logsObj[devId];
         const isReset = item.status === 'RESET_REQUESTED';
 
-        // 1. OLAHAN FORMAT PESILAT (JIKA ARRAY ATUPUN STRUKTUR TEKS)
+        // 1. OLAHAN FORMAT PESILAT (JIKA ARRAY ATAU STRUKTUR TEKS)
         let htmlPesilat = `<span class="text-gray-400 italic">- Tiada Pesilat -</span>`;
         
         if (item.pesilat) {
           let listPesilat = [];
           
           if (Array.isArray(item.pesilat)) {
-            // Jika disimpan sebagai Array Object atau Array String
-            listPesilat = item.pesilat.map(p => typeof p === 'object' ? p.nama : p);
+            listPesilat = item.pesilat.map(p => typeof p === 'object' ? (p.nama || JSON.stringify(p)) : p);
           } else if (typeof item.pesilat === 'string' && item.pesilat.trim() !== '-' && item.pesilat.trim() !== '') {
-            // Jika disimpan sebagai String yang dipisahkan oleh koma
-            listPesilat = item.pesilat.split(',').map(s => s.trim());
+            listPesilat = item.pesilat.split(',').map(s => s.trim()).filter(s => s !== '');
           }
 
           // 2. SUSUN NAMA KE BAWAH DALAM KOTAK SCROLLABLE (MAX HEIGHT 120px)
           if (listPesilat.length > 0) {
             htmlPesilat = `
-              <div class="max-h-28 overflow-y-auto space-y-1 p-1 bg-gray-50 rounded border border-gray-200 text-xs">
+              <div class="max-h-32 overflow-y-auto space-y-1 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs min-w-[180px]">
                 ${listPesilat.map((nama, idx) => `
-                  <div class="truncate text-slate-700 font-medium border-b border-gray-100 last:border-0 pb-0.5">
+                  <div class="truncate text-slate-700 font-medium border-b border-gray-200 last:border-0 pb-0.5">
                     ${idx + 1}. ${nama}
                   </div>
                 `).join('')}
