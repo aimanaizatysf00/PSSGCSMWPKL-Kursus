@@ -483,7 +483,21 @@
         total += Number(inp.value) || 0;
       });
       const elem = document.getElementById(`jumlahMarkah_${pIdx}`);
-      if (elem) elem.innerText = total;
+      if (elem) {
+        elem.innerText = total;
+        
+        // Buang semua kelas warna sebelum ini
+        elem.classList.remove('text-amber-600', 'text-red-600', 'text-emerald-600');
+        
+        // Syarat warna mengikut jumlah markah
+        if (total <= 49) {
+          elem.classList.add('text-red-600'); // 49 ke bawah: Merah
+        } else if (total >= 50 && total <= 79) {
+          elem.classList.add('text-emerald-600'); // 50 - 79: Hijau
+        } else if (total >= 80) {
+          elem.classList.add('text-amber-600'); // 80 - 100: Emas/Kuning
+        }
+      }
       
       simpanSesiTempatan();
     }
